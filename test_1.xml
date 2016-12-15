@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Document   : test.xml.xml
+    Created on : December 2, 2009, 10:29 AM
+    Author     : chengt
+    Description:
+        Purpose of the document follows.
+-->
+<a mouid='0'>
+	<b mouid='1'>
+		<c mouid='2'>
+		</c>
+	</b>
+	<d mouid='3'>
+	</d>
+	<e />
+</a>

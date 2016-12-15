@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="taskbook_docbook" default="task2docbook" basedir=".">
+  <property name="dita.dir" value="/home/chengt/bin/DITA-OT1.5.3"/>
+  <import file="${dita.dir}${file.separator}integrator.xml"/>
+  <target name="task2docbook" depends="integrate">
+    <ant antfile="${dita.dir}${file.separator}build.xml" target="init">
+      <property name="args.input"
+        value="${dita.dir}${file.separator}samples${file.separator}taskbook.ditamap"/>
+      <property name="output.dir"
+        value="out${file.separator}samples${file.separator}docbook"/>
+      <property name="transtype" value="docbook"/>
+    </ant>
+  </target>
+</project>

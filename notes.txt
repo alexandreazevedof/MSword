@@ -1,0 +1,70 @@
+
+file tree merging
+========================================
+
+add/move to A
+A:x
+O:
+B:
+------
+M:x
+
+add/move to B
+A:
+O:
+B:x
+------
+M:x
+
+move to both A and B
+A:x
+O:
+B:x
+------
+M:x
+
+delete in A
+A:
+O:x
+B:x
+-----
+M:
+
+delete in B
+A:x
+O:x
+B:
+-----
+M:
+
+delete in both A and B
+A:
+O:x
+B:
+-----
+M:
+
+move in both A and B to the same parent
+A:
+O:x
+B:
+----------
+M:
+
+conflicts:
+
+deleted in A, update in B
+A:
+O:x
+B:x'
+
+delete in B, update in A
+A:x'
+O:x
+B:
+
+move in A and in B to different parent
+A:
+O:x
+B:
+

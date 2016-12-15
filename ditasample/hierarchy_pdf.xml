@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="hierarchy_pdf" default="hierarchy2pdf" basedir=".">
+  <property name="dita.dir" value="/home/chengt/bin/DITA-OT1.5.3"/>
+  <import file="${dita.dir}${file.separator}integrator.xml"/>
+  <target name="hierarchy2pdf" depends="integrate">
+    <ant antfile="${dita.dir}${file.separator}build.xml" target="init">
+      <property name="args.input" value="hierarchy.ditamap"/>
+      <property name="output.dir" value="out${file.separator}pdf"/>
+      <property name="transtype" value="pdf"/>
+    </ant>
+  </target>
+</project>

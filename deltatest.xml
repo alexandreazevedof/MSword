@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<a mouid="0"
+      w="10"
+      x="1"
+      y="50" >
+<molhado:revision-history molhado:xmlns="http://www.cs.uwm.edu/molhado">
+<molhado:revision id='0' parent='-1' >
+<molhado:children-update nodeid='0' oldchildren='[1, 2, 4]' newchildren='[1, 2]' />
+<molhado:attr-add nodeid= '0' attr='z' value='100' />
+<molhado:attr-update nodeid='0' attr='x' oldvalue='20' newvalue='1' />
+<molhado:attr-del nodeid='0' attr='y' value='50' />
+<molhado:children-update nodeid='1' oldchildren='[3]' newchildren='[]' />
+<molhado:name-update nodeid='2' oldvalue='t' newvalue='c' />
+</molhado:revision>
+</molhado:revision-history>
+
+    <b mouid="1">
+      <d mouid="3" />
+    </b>
+    <t mouid="2" />
+    <e mouid="4" />
+  </a>

@@ -1,0 +1,20 @@
+1.  dynamic loading and editing results in null exception
+
+Problem is it tries to loaded a new component.  OK, if new, don't load.
+
+2.  conflict resolution is akward
+
+The user is allowed only to edit his version of the file to make it mergable
+with the other version?  There is chance that this never remove some conflicts.
+If the user changed the other version,  a new version must be created and stored.
+We don't want unnecessary versions to be created or do we?
+
+3.  when we derive a product, we create share component for files referenced by
+the ditamap.  The problem is that some dita files contains links to other files.
+In another word, the file depends on other files and without them, we can't build
+the dita project.  So, the solution is to extract links from these files as well
+and share the files referenced by these links.
+
+Question:
+1.  Is it important to be able to build a project for the demo
+2.  Change propagation does require merging of entire project.

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Document   : test.xml.xml
+    Created on : December 2, 2009, 10:29 AM
+    Author     : chengt
+    Description:
+        Purpose of the document follows.
+-->
+<a>
+	<b>
+		<c>
+		</c>
+	</b>
+	<d>
+	</d>
+</a>

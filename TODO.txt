@@ -1,0 +1,63 @@
+Import dates:
+Feb 18,  PLEASE notification
+Feb 24,  Phone meeting with Steve
+Mar  4,  Poster competition abstract due
+Mar 17,  Demonstration for HP
+Mar 18,  Demonstration for HP
+Apr  1,  Poster deadline
+Apr  8,  DocEng abstract due
+Apr 15,  DocEng paper
+Apr 15   Dissertation paperwork due
+Apr 16,  Poster competition
+May 22   PLEASE workshop
+May 23   PLEASE workshop
+May 27,  DocEng acceptance notification
+
+Abstract submissions due April 8, 2011
+Paper submissions due April 15, 2011
+Acceptance notice May 27, 2011
+
+
+1.  Change propagation: possible cases
+    Note: change can be directory, file, relationships
+
+             Before                   After
+     ---------------------------------------------------------------------
+     case  | core | prod |  =>  | core | prod  | note
+     ------- ---- - ---- -------- --- -- ---- -- -------------------------
+     1     |  a'  |  a   |  =>  |  a'  |   a'  |  forward change
+     2     |  a'  |  a*  |  =>  |  a'  |   a* '|  forward change merge
+     3     |  a'  |  a*  |  =>  |  a'  |   a'  |  forward change override
+     4     |  a'  |  a*  |  =>  |  a'  |   a   |  revert in product
+     5     |  a   |      |  =>  |  a   |   a   |  forward change new item
+
+     6     |  a   |  a'  |  =>  |  a'  |   a'  |  backward change
+     7     |  a'  |  a*  |  =>  |  a' *|   a*  |  backward change merge
+     8     |  a'  |  a*  |  =>  |  a*  |   a*  |  backward change override
+     9     |  a'  |  a*  |  =>  |  a   |   a*  |  revert in core asset
+     10    |      |  a   |  =>  |  a   |   a   |  backward change new item
+
+2.  support for binary file (detect changes using signature)
+
+3.  Unordered Tree Merging (file structure merging)
+
+4.  Sequence Merging (Text file)
+
+5.  Ordered Tree Merging (XML file merging)
+
+6.  Relationships and constraints
+
+7.  Example (DITA)
+  -import DITA project
+  -representing DITA map (as user selectable tree)
+  -export and build DITA project
+
+8. Example (Java code)
+
+9. GUI (editor, views, commands)
+
+10.checkout to files, checkin as files, server and clients (someone else's work)
+
+Papers:
+SPLC 2012
+DocEng 2011

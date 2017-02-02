@@ -61,8 +61,9 @@ public class SimpleXmlParser {
   public final static String CHANGE  = "axml.change";
   public final static String CHILDREN_CHANGE  = "axml.children_change";
   public final static String BUNDLE  = "bundle";
-  public final static String IDNAME  = "mouid";
-
+  //public final static String IDNAME  = "mouid";
+  public final static String IDNAME = "rsidR";
+  
   public final static Tree tree;
   public final static SlotInfo<String> nodeTypeAttr;
   public final static SlotInfo<Integer> mouidAttr;
@@ -137,11 +138,11 @@ public class SimpleXmlParser {
 
   public static void main(String[] args) throws XmlParseException, Exception {
     SimpleXmlParser p = new SimpleXmlParser(0);
-		IRNode doc = p.parse(new File("/home/chengt/merge-demo/gallardoX.svg"));
-		Version vx = Version.getVersion();
-		p.writeToFile(new File("/home/chengt/out.svg"), doc);
-
-		if (true) return;
+//		IRNode doc = p.parse(new File("/home/chengt/merge-demo/gallardoX.svg"));
+//		Version vx = Version.getVersion();
+//		p.writeToFile(new File("/home/chengt/out.svg"), doc);
+//
+//		if (true) return;
 
    // String input = "<a x='10'><b y='20' z='30'/></a>";
    // IRNode root = p.parse(input);
@@ -151,7 +152,8 @@ public class SimpleXmlParser {
     long startMem = Runtime.getRuntime().totalMemory() -
             Runtime.getRuntime().freeMemory();
     long t0 = System.currentTimeMillis();
-    IRNode root = p.parse(new File("/home/chengt/experiment/constant nodes/10000.xml"));
+    
+    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/d0.xml"));
     Version v0 = Version.getVersion();
     tagNameAttr.addDefineObserver(changeRecord);
 //    attrsSeqAttr.addDefineObserver(changeRecord);
@@ -160,14 +162,16 @@ public class SimpleXmlParser {
 //    tree.addObserver(childrenChange);
     PropagateUpTree.attach(changeRecord, tree);
     Version.saveVersion(v0);
+    
     long t1 = System.currentTimeMillis();
-    p.parse(root, new File("/home/chengt/experiment/constant nodes/10000.xml"));
+    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/d1.xml"));
     Version v1 = Version.getVersion();
    long t2 = System.currentTimeMillis();
     Version.saveVersion(v0);
-    p.parse( root, new File("/home/chengt/experiment/constant nodes/10000.xml"));
+    
+    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/d2.xml"));
     long t3 = System.currentTimeMillis();
-    nodeTable = null;
+    //nodeTable = null;
     Version v2 = Version.getVersion();
  
     IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
@@ -176,7 +180,7 @@ public class SimpleXmlParser {
     Version v3 = merge.merge();
     long t4 = System.currentTimeMillis();
     Version.saveVersion(v3);
-    SimpleXmlParser.writeToFile("/home/chengt/mergetest/out.xml",root);
+    SimpleXmlParser.writeToFile("/home/alex/NetBeansProjects/momerge/dist/out.xml",root);
     long t5 = System.currentTimeMillis();
 
     long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -590,8 +594,13 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
     for(int i=0; attrs!=null && i<attrs.getLength(); i++){
       String name = attrs.getQName(i);
       String val = attrs.getValue(i);
+      //if (name.equals("rsid")){
       if (name.equals(SimpleXmlParser2.IDNAME)){
+      //if (name.equals(SimpleXmlParser.IDNAME)){
         mouid = Integer.parseInt(val);
+        //long rsidR = Long.parseLong(val, 16);
+        //mouid = (int) rsidR;
+        
         node.setSlotValue(mouidAttr, mouid);
         nodeTable.put(mouid, node);
         mouid++;
@@ -764,11 +773,16 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
       IRNode node = null;
       List<IRNode> oldChildren = null;
       if (uid != null) {
+        //long rsidR = Long.parseLong(uid, 16);
+       
         node = nodeTable.get(Integer.parseInt(uid));
+        //node = nodeTable.get((int)rsidR);
         if (node == null) {
-          throw new SAXException("Can't find node");
+            //TODO new node. Assign new id
+            node = createElementNode(qualifiedName, attrs);
+          //throw new SAXException("Can't find node");
         }
-
+              
         if (!node.getSlotValue(tagNameAttr).equals(qualifiedName)){
           node.setSlotValue(tagNameAttr, qualifiedName);
         }

@@ -770,6 +770,7 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
             String qualifiedName, Attributes attrs) throws SAXException {
 
       String uid = attrs.getValue(IDNAME);
+      //test
       IRNode node = null;
       List<IRNode> oldChildren = null;
       if (uid != null) {

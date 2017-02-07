@@ -595,23 +595,27 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
       String name = attrs.getQName(i);
       String val = attrs.getValue(i);
       //if (name.equals("rsid")){
-      if (name.equals(SimpleXmlParser2.IDNAME)){
-      //if (name.equals(SimpleXmlParser.IDNAME)){
+      //if (name.equals(SimpleXmlParser2.IDNAME)){
+      
+      
+      if (name.equals(SimpleXmlParser.IDNAME)){
         mouid = Integer.parseInt(val);
+        
         //long rsidR = Long.parseLong(val, 16);
         //mouid = (int) rsidR;
-        
+                
         node.setSlotValue(mouidAttr, mouid);
         nodeTable.put(mouid, node);
-        mouid++;
+        //mouid++;
         mouidFound = true;
+        
       } else {
         attrList.addAttribute(new Attribute(name, val));
       }
     }
     node.setSlotValue(attrListAttr, attrList);
-    if (!mouidFound){
-      node.setSlotValue(mouidAttr, mouid++);
+    if (!mouidFound){ 
+          node.setSlotValue(mouidAttr, mouid++);
     }
     tree.initNode(node);
   }
@@ -773,28 +777,28 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
       //test
       IRNode node = null;
       List<IRNode> oldChildren = null;
-      if (uid != null) {
-        //long rsidR = Long.parseLong(uid, 16);
-       
-        node = nodeTable.get(Integer.parseInt(uid));
-        //node = nodeTable.get((int)rsidR);
-        if (node == null) {
-            //TODO new node. Assign new id
-            node = createElementNode(qualifiedName, attrs);
-          //throw new SAXException("Can't find node");
-        }
-              
-        if (!node.getSlotValue(tagNameAttr).equals(qualifiedName)){
-          node.setSlotValue(tagNameAttr, qualifiedName);
-        }
+      
+      node = nodeTable.get(Integer.parseInt(uid));
+      if (uid != null && node !=null) {
+        
+//        if (node == null) {
+//            //TODO new node. Assign new id
+//            node = createElementNode(qualifiedName, attrs);
+//          //throw new SAXException("Can't find node");
+//        }else{
+        
+            if (!node.getSlotValue(tagNameAttr).equals(qualifiedName)){
+              node.setSlotValue(tagNameAttr, qualifiedName);
+            }
 
-        updateAttrs2(node, attrs);
+            updateAttrs2(node, attrs);
 
-        int numChildren = tree.numChildren(node);
-        oldChildren = new Vector<IRNode>(numChildren);
-        for (int i = 0; i < numChildren; i++) {
-          oldChildren.add(tree.getChild(node, i));
-        }
+            int numChildren = tree.numChildren(node);
+            oldChildren = new Vector<IRNode>(numChildren);
+            for (int i = 0; i < numChildren; i++) {
+              oldChildren.add(tree.getChild(node, i));
+            }
+//        }
       } else {
         node = createElementNode(qualifiedName, attrs);
       }

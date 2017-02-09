@@ -90,7 +90,8 @@ public class SimpleXmlParser {
     try {
       treeX = new Tree(TREE, vsf);
       nodeTypeAttrX =csf.newAttribute(NODETYPE, IRStringType.prototype);
-      mouidAttrX = csf.newAttribute(MOUID, IRIntegerType.prototype);
+//      mouidAttrX = csf.newAttribute(MOUID, IRIntegerType.prototype);
+      mouidAttrX = vsf.newAttribute(MOUID, IRIntegerType.prototype);
       tagNameX = vsf.newAttribute(TAGNAME, IRStringType.prototype);
       textAttrX = vsf.newAttribute(TEXT, IRStringType.prototype);
  //     attrsX = vsf.newAttribute(ATTRS,
@@ -153,7 +154,7 @@ public class SimpleXmlParser {
             Runtime.getRuntime().freeMemory();
     long t0 = System.currentTimeMillis();
     
-    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/d0.xml"));
+    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/t0.xml"));
     Version v0 = Version.getVersion();
     tagNameAttr.addDefineObserver(changeRecord);
 //    attrsSeqAttr.addDefineObserver(changeRecord);
@@ -164,15 +165,16 @@ public class SimpleXmlParser {
     Version.saveVersion(v0);
     
     long t1 = System.currentTimeMillis();
-    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/d1.xml"));
+    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/t1.xml"));
     Version v1 = Version.getVersion();
    long t2 = System.currentTimeMillis();
     Version.saveVersion(v0);
     
-    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/d2.xml"));
+    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/t2.xml"));
     long t3 = System.currentTimeMillis();
     //nodeTable = null;
     Version v2 = Version.getVersion();
+    Version.saveVersion(v0);
  
     IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
             root, new VersionMarker(v1), new VersionMarker(v0), new VersionMarker(v2) );
@@ -587,36 +589,31 @@ public class SimpleXmlParser {
    * @param tagName
    * @param attrs
    */
-public void initNode2(IRNode node, String tagName, Attributes attrs){
+public void initNode2(IRNode node, String tagName, Attributes attrs, boolean newNode){
     node.setSlotValue(tagNameAttr, tagName);
     AttributeList attrList = new AttributeList(4);
-    boolean mouidFound = false;
+//    boolean mouidFound = false;
     for(int i=0; attrs!=null && i<attrs.getLength(); i++){
       String name = attrs.getQName(i);
       String val = attrs.getValue(i);
       //if (name.equals("rsid")){
-      //if (name.equals(SimpleXmlParser2.IDNAME)){
-      
-      
       if (name.equals(SimpleXmlParser.IDNAME)){
         mouid = Integer.parseInt(val);
-        
-        //long rsidR = Long.parseLong(val, 16);
-        //mouid = (int) rsidR;
-                
-        node.setSlotValue(mouidAttr, mouid);
-        nodeTable.put(mouid, node);
-        //mouid++;
-        mouidFound = true;
+        if (newNode){
+            node.setSlotValue(mouidAttr, mouid);
+        }else{
+             node.setSlotValue(mouidAttr, mouid);
+            nodeTable.put(mouid, node);
+        }
+//        mouid++;
+//        mouidFound = true;
         
       } else {
         attrList.addAttribute(new Attribute(name, val));
       }
     }
     node.setSlotValue(attrListAttr, attrList);
-    if (!mouidFound){ 
-          node.setSlotValue(mouidAttr, mouid++);
-    }
+    
     tree.initNode(node);
   }
 
@@ -646,9 +643,9 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
 //    tree.initNode(node);
 //  }
 
-  private IRNode createElementNode(String tagName, Attributes attrs) {
+  private IRNode createElementNode(String tagName, Attributes attrs, boolean newNode) {
     IRNode node = new PlainIRNode();
-    initNode2(node, tagName, attrs);
+    initNode2(node, tagName, attrs, newNode);
     return node;
   }
 
@@ -690,7 +687,8 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
 //        }
 //      }
 //      inTextMode = false;
-     IRNode node = createElementNode(qualifiedName, attrs);
+     boolean newNode = false;
+     IRNode node = createElementNode(qualifiedName, attrs, newNode);
      nodeTable.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
 
       //handling namespaces
@@ -774,18 +772,18 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
             String qualifiedName, Attributes attrs) throws SAXException {
 
       String uid = attrs.getValue(IDNAME);
-      //test
       IRNode node = null;
       List<IRNode> oldChildren = null;
+      boolean newNode = false;
       
-      node = nodeTable.get(Integer.parseInt(uid));
-      if (uid != null && node !=null) {
-        
-//        if (node == null) {
-//            //TODO new node. Assign new id
-//            node = createElementNode(qualifiedName, attrs);
-//          //throw new SAXException("Can't find node");
-//        }else{
+     // if (uid != null && node !=null) {
+        if (uid != null){
+            node = nodeTable.get(Integer.parseInt(uid));
+        if (node == null) {
+            newNode=true;
+            node = createElementNode(qualifiedName, attrs, newNode);
+//          throw new SAXException("Can't find node");
+        }else{
         
             if (!node.getSlotValue(tagNameAttr).equals(qualifiedName)){
               node.setSlotValue(tagNameAttr, qualifiedName);
@@ -798,10 +796,11 @@ public void initNode2(IRNode node, String tagName, Attributes attrs){
             for (int i = 0; i < numChildren; i++) {
               oldChildren.add(tree.getChild(node, i));
             }
-//        }
-      } else {
-        node = createElementNode(qualifiedName, attrs);
-      }
+        }
+      } 
+//        else {
+//        node = createElementNode(qualifiedName, attrs);
+//      }
 
       //handling namespaces
 //      if (!prefixList.isEmpty()){

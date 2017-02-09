@@ -469,7 +469,8 @@ public class SimpleXmlParser {
    // indent(w,indent);
     w.write("<" );
     w.write(tagName);
-    if (withID) w.write(" "+IDNAME+"=\"" + n.getSlotValue(SimpleXmlParser.mouidAttr) + "\"");
+    String hex = String.format("%08X", n.getSlotValue(SimpleXmlParser.mouidAttr));
+    if (withID) w.write(" "+IDNAME+"=\"" + hex + "\"");
     w.write(dumpAttrs2(indent, n));
 
     int numChildren = tree.numChildren(n);
@@ -598,7 +599,8 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
       String val = attrs.getValue(i);
       //if (name.equals("rsid")){
       if (name.equals(SimpleXmlParser.IDNAME)){
-        mouid = Integer.parseInt(val);
+//        mouid = Integer.parseInt(val);
+        mouid = (int) Long.parseLong(val,16);
         if (newNode){
             node.setSlotValue(mouidAttr, mouid);
         }else{
@@ -778,7 +780,8 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
       
      // if (uid != null && node !=null) {
         if (uid != null){
-            node = nodeTable.get(Integer.parseInt(uid));
+//            node = nodeTable.get(Integer.parseInt(uid));
+            node = nodeTable.get((int)Long.parseLong(uid,16));
         if (node == null) {
             newNode=true;
             node = createElementNode(qualifiedName, attrs, newNode);

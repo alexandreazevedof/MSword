@@ -434,8 +434,8 @@ public class IRTreeMerge {
           for(IRNode u:unique){
             ConflictInfo ci = new ConflictInfo(u, c.getType(),
                     "Conflicting moves: node moved in same parent but different locations",c);
-//            conflictingNodes.add(ci);
-//            conflictTable.put(u, ci);
+            conflictingNodes.add(ci);
+            conflictTable.put(u, ci);
           }
 
           /**
@@ -942,7 +942,11 @@ public class IRTreeMerge {
       }
       Version.restoreVersion();
       if (val != null) {
-        node.setSlotValue(si, val);
+          try{
+            node.setSlotValue(si, val);
+          }catch(edu.cmu.cs.fluid.ir.SlotImmutableException e){
+              System.out.println(e.getMessage());
+          }
       }
     }
 

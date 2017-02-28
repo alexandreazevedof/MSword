@@ -3,6 +3,7 @@ package edu.uwm.cs.molhado.xml.simple;
 import edu.cmu.cs.fluid.ir.Bundle;
 import edu.cmu.cs.fluid.ir.ConstantSlotFactory;
 import edu.cmu.cs.fluid.ir.IRIntegerType;
+import edu.cmu.cs.fluid.ir.IRLongType;
 import edu.cmu.cs.fluid.ir.IRNode;
 import edu.cmu.cs.fluid.ir.IRObjectType;
 import edu.cmu.cs.fluid.ir.IRSequence;
@@ -52,159 +53,166 @@ import org.xml.sax.helpers.XMLReaderFactory;
  */
 public class SimpleXmlParser {
 
-  public final static String TREE    = "axml.tree";
-  public final static String NODETYPE= "axml.type";
-  public final static String MOUID   = "axml.mouid";
-  public final static String TAGNAME = "axml.name";
-  public final static String TEXT    = "axml.text";
-  public final static String ATTRS   = "axml.attrs";
-  public final static String CHANGE  = "axml.change";
-  public final static String CHILDREN_CHANGE  = "axml.children_change";
-  public final static String BUNDLE  = "bundle";
-  //public final static String IDNAME  = "mouid";
-  public final static String IDNAME = "rsidR";
-  
-  public final static Tree tree;
-  public final static SlotInfo<String> nodeTypeAttr;
-  public final static SlotInfo<Integer> mouidAttr;
-  public final static SlotInfo<String> tagNameAttr;
-  public final static SlotInfo<String> textAttr;
-  public final static SlotInfo<AttributeList> attrListAttr;
-  public final static VersionedChangeRecord changeRecord;
+    public final static String TREE = "axml.tree";
+    public final static String NODETYPE = "axml.type";
+    public final static String MOUID = "axml.mouid";
+    public final static String TAGNAME = "axml.name";
+    public final static String TEXT = "axml.text";
+    public final static String ATTRS = "axml.attrs";
+    public final static String CHANGE = "axml.change";
+    public final static String CHILDREN_CHANGE = "axml.children_change";
+    public final static String BUNDLE = "bundle";
+    //public final static String IDNAME  = "mouid";
+    public final static String IDNAME = "w:rsidR";
+    public final static String DOCUMENT_TAG = "w:document";
+    public final static String BODY_TAG = "body";
+
+    public final static Tree tree;
+    public final static SlotInfo<String> nodeTypeAttr;
+    public final static SlotInfo<Long> mouidAttr;
+    public final static SlotInfo<String> tagNameAttr;
+    public final static SlotInfo<String> textAttr;
+    public final static SlotInfo<AttributeList> attrListAttr;
+    public final static VersionedChangeRecord changeRecord;
 //  public final static VersionedChangeRecord childrenChange;
-  public final static Bundle bundle = new Bundle();
+    public final static Bundle bundle = new Bundle();
 
-  public final static VersionedSlotFactory vsf = VersionedSlotFactory.prototype;
-  public final static ConstantSlotFactory csf = ConstantSlotFactory.prototype;
-  public final static SimpleSlotFactory ssf = SimpleSlotFactory.prototype;
-  static {
-    SlotInfo<String> nodeTypeAttrX = null;
-    SlotInfo<Integer> mouidAttrX = null;
-    SlotInfo<String> tagNameX = null;
-    SlotInfo<String> textAttrX = null;
-    SlotInfo<IRSequence<Property>> attrsX = null;
-    SlotInfo<AttributeList> attrListAttrX= null;
-    VersionedChangeRecord changeRecordX = null;
+    public final static VersionedSlotFactory vsf = VersionedSlotFactory.prototype;
+    public final static ConstantSlotFactory csf = ConstantSlotFactory.prototype;
+    public final static SimpleSlotFactory ssf = SimpleSlotFactory.prototype;
+
+    static {
+        SlotInfo<String> nodeTypeAttrX = null;
+        SlotInfo<Long> mouidAttrX = null;
+        SlotInfo<String> tagNameX = null;
+        SlotInfo<String> textAttrX = null;
+        SlotInfo<IRSequence<Property>> attrsX = null;
+        SlotInfo<AttributeList> attrListAttrX = null;
+        VersionedChangeRecord changeRecordX = null;
 //    VersionedChangeRecord childrenChangeX = null;
-    Tree treeX = null;
-    try {
-      treeX = new Tree(TREE, vsf);
-      nodeTypeAttrX =csf.newAttribute(NODETYPE, IRStringType.prototype);
+        Tree treeX = null;
+        try {
+            treeX = new Tree(TREE, vsf);
+            nodeTypeAttrX = csf.newAttribute(NODETYPE, IRStringType.prototype);
 //      mouidAttrX = csf.newAttribute(MOUID, IRIntegerType.prototype);
-      mouidAttrX = vsf.newAttribute(MOUID, IRIntegerType.prototype);
-      tagNameX = vsf.newAttribute(TAGNAME, IRStringType.prototype);
-      textAttrX = vsf.newAttribute(TEXT, IRStringType.prototype);
- //     attrsX = vsf.newAttribute(ATTRS,
+            mouidAttrX = csf.newAttribute(MOUID, IRLongType.prototype);
+            tagNameX = vsf.newAttribute(TAGNAME, IRStringType.prototype);
+            textAttrX = vsf.newAttribute(TEXT, IRStringType.prototype);
+            //     attrsX = vsf.newAttribute(ATTRS,
 //              new IRSequenceType(IRPropertyType.prototype));
-      attrListAttrX= vsf.newAttribute("xml.attrs.list", new IRObjectType<AttributeList>());
-      changeRecordX = (VersionedChangeRecord) vsf.newChangeRecord(CHANGE);
+            attrListAttrX = vsf.newAttribute("xml.attrs.list", new IRObjectType<AttributeList>());
+            changeRecordX = (VersionedChangeRecord) vsf.newChangeRecord(CHANGE);
 //      childrenChangeX= (VersionedChangeRecord) vsf.newChangeRecord(CHILDREN_CHANGE);
-    } catch (SlotAlreadyRegisteredException ex) {
+        } catch (SlotAlreadyRegisteredException ex) {
 //      Exceptions.printStackTrace(ex);
-			ex.printStackTrace();
-    }
-    //bundle.setName(BUNDLE);
-    bundle.saveAttribute(nodeTypeAttr = nodeTypeAttrX);
-    bundle.saveAttribute(mouidAttr = mouidAttrX);
-    bundle.saveAttribute(tagNameAttr = tagNameX);
-    bundle.saveAttribute(textAttr = textAttrX);
-    bundle.saveAttribute(attrListAttr = attrListAttrX);
-    changeRecord = changeRecordX;
+            ex.printStackTrace();
+        }
+        //bundle.setName(BUNDLE);
+        bundle.saveAttribute(nodeTypeAttr = nodeTypeAttrX);
+        bundle.saveAttribute(mouidAttr = mouidAttrX);
+        bundle.saveAttribute(tagNameAttr = tagNameX);
+        bundle.saveAttribute(textAttr = textAttrX);
+        bundle.saveAttribute(attrListAttr = attrListAttrX);
+        changeRecord = changeRecordX;
 //    childrenChange = childrenChangeX;
-    tree = treeX;
-		tree.saveAttributes(bundle);
-  }
-  private static Hashtable<Integer, IRNode> nodeTable = new Hashtable<Integer,IRNode>();
-  private int mouid = 0;
-
-  public SimpleXmlParser(int nodeCount){
-    this.mouid = nodeCount;
-  }
-
-  public void setMouid(int id){
-    mouid = id;
-  }
-
-  private XMLReader xmlReader = null;
-
-  private  String parserName = "org.apache.xerces.parsers.SAXParser";
-  private XMLReader getReader() throws SAXException {
-    if (xmlReader == null){
-    xmlReader = XMLReaderFactory.createXMLReader(parserName);
-    xmlReader.setFeature("http://xml.org/sax/features/namespaces",false);
-    xmlReader.setFeature("http://xml.org/sax/features/validation",false);
+        tree = treeX;
+        tree.saveAttributes(bundle);
     }
-    return xmlReader;
-  }
+    private static Hashtable<Long, IRNode> nodeTable = new Hashtable<Long, IRNode>();
+    private int mouid = 0;
+    private int wrapid = 0;
 
-  public static void main(String[] args) throws XmlParseException, Exception {
-    SimpleXmlParser p = new SimpleXmlParser(0);
+    public SimpleXmlParser(int nodeCount) {
+        this.mouid = nodeCount;
+    }
+
+    public void setMouid(int id) {
+        mouid = id;
+    }
+
+    private XMLReader xmlReader = null;
+
+    private String parserName = "org.apache.xerces.parsers.SAXParser";
+
+    private XMLReader getReader() throws SAXException {
+        if (xmlReader == null) {
+            xmlReader = XMLReaderFactory.createXMLReader(parserName);
+            xmlReader.setFeature("http://xml.org/sax/features/namespaces", false);
+            xmlReader.setFeature("http://xml.org/sax/features/validation", false);
+        }
+        return xmlReader;
+    }
+
+    public static void main(String[] args) throws XmlParseException, Exception {
+        SimpleXmlParser p = new SimpleXmlParser(0);
 //		IRNode doc = p.parse(new File("/home/chengt/merge-demo/gallardoX.svg"));
 //		Version vx = Version.getVersion();
 //		p.writeToFile(new File("/home/chengt/out.svg"), doc);
 //
 //		if (true) return;
 
-   // String input = "<a x='10'><b y='20' z='30'/></a>";
-   // IRNode root = p.parse(input);
-   // System.out.println(p.toString(root));
+        // String input = "<a x='10'><b y='20' z='30'/></a>";
+        // IRNode root = p.parse(input);
+        // System.out.println(p.toString(root));
+        long startMem = Runtime.getRuntime().totalMemory()
+                - Runtime.getRuntime().freeMemory();
+        long t0 = System.currentTimeMillis();
 
+//    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/t0.xml"));
+        IRNode root = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t0.xml"));
 
-    long startMem = Runtime.getRuntime().totalMemory() -
-            Runtime.getRuntime().freeMemory();
-    long t0 = System.currentTimeMillis();
-    
-    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/t0.xml"));
-    Version v0 = Version.getVersion();
-    tagNameAttr.addDefineObserver(changeRecord);
+        Version v0 = Version.getVersion();
+        tagNameAttr.addDefineObserver(changeRecord);
 //    attrsSeqAttr.addDefineObserver(changeRecord);
-    attrListAttr.addDefineObserver(changeRecord);
-    tree.addObserver(changeRecord);
+        attrListAttr.addDefineObserver(changeRecord);
+        tree.addObserver(changeRecord);
 //    tree.addObserver(childrenChange);
-    PropagateUpTree.attach(changeRecord, tree);
-    Version.saveVersion(v0);
-    
-    long t1 = System.currentTimeMillis();
-    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/t1.xml"));
-    Version v1 = Version.getVersion();
-   long t2 = System.currentTimeMillis();
-    Version.saveVersion(v0);
-    
-    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/t2.xml"));
-    long t3 = System.currentTimeMillis();
-    //nodeTable = null;
-    Version v2 = Version.getVersion();
-    Version.saveVersion(v0);
- 
-    IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
-            root, new VersionMarker(v1), new VersionMarker(v0), new VersionMarker(v2) );
+        PropagateUpTree.attach(changeRecord, tree);
+        Version.saveVersion(v0);
 
-    Version v3 = merge.merge();
-    long t4 = System.currentTimeMillis();
-    Version.saveVersion(v3);
-    SimpleXmlParser.writeToFile("/home/alex/NetBeansProjects/momerge/dist/out.xml",root);
-    long t5 = System.currentTimeMillis();
+        long t1 = System.currentTimeMillis();
+//    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/t1.xml"));
+        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t1.xml"));
+        Version v1 = Version.getVersion();
+        long t2 = System.currentTimeMillis();
+        Version.saveVersion(v0);
 
-    long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+//    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/t2.xml"));
+        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t2.xml"));
+        long t3 = System.currentTimeMillis();
+        //nodeTable = null;
+        Version v2 = Version.getVersion();
+        Version.saveVersion(v0);
 
-    System.out.println("parse: " + (t3-t0));
-    //System.out.println("second: " + (t2-t1));
-    //System.out.println("third: " + (t3-t2));
-    System.out.println("merge: " + (t4-t3));
-    System.out.println("write: " + (t5-t4));
-    System.out.println("total: " + (t5-t0));
+        IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
+                root, new VersionMarker(v1), new VersionMarker(v0), new VersionMarker(v2));
 
+        Version v3 = merge.merge();
+        long t4 = System.currentTimeMillis();
+        Version.saveVersion(v3);
+        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/out.xml", root);
+        long t5 = System.currentTimeMillis();
 
+        long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
-    System.out.println("memory: " + (endMem-startMem));
-    //System.out.println(nodeTable.size());
-  }
+        System.out.println("parse: " + (t3 - t0));
+        //System.out.println("second: " + (t2-t1));
+        //System.out.println("third: " + (t3-t2));
+        System.out.println("merge: " + (t4 - t3));
+        System.out.println("write: " + (t5 - t4));
+        System.out.println("total: " + (t5 - t0));
 
-  private static String indent( int n) throws IOException {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < n; i++) { sb.append(" "); }
-    return sb.toString();
-  }
+        System.out.println("memory: " + (endMem - startMem));
+        //System.out.println(nodeTable.size());
+    }
+
+    private static String indent(int n) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            sb.append(" ");
+        }
+        return sb.toString();
+    }
 //
 //  private static void dumpAttrs(FileWriter w, int indent, IRNode n) throws IOException{
 //    IRSequence<Property> sq = n.getSlotValue(attrsSeqAttr);
@@ -219,21 +227,22 @@ public class SimpleXmlParser {
 //      w.flush();
 //    }
 //  }
- private static String dumpAttrs2(int indent, IRNode n) throws IOException{
-   StringBuilder sb = new StringBuilder();
-    AttributeList sq = n.getSlotValue(SimpleXmlParser.attrListAttr);
-    sb.append(" ");
-    for(int i=0; i<sq.size(); i++){
-      Attribute p = sq.get(i);
-     // w.println();
-     // indent(w,indent + 2);
-      sb.append(p.getName());
-      sb.append("=\"");
-      sb.append(p.getValue());
-      sb.append("\" ");
+
+    private static String dumpAttrs2(int indent, IRNode n) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        AttributeList sq = n.getSlotValue(SimpleXmlParser.attrListAttr);
+        sb.append(" ");
+        for (int i = 0; i < sq.size(); i++) {
+            Attribute p = sq.get(i);
+            // w.println();
+            // indent(w,indent + 2);
+            sb.append(p.getName());
+            sb.append("=\"");
+            sb.append(p.getValue());
+            sb.append("\" ");
+        }
+        return sb.toString();
     }
-    return sb.toString();
-  }
 //
 //  private static String dumpAttrs(int indent, IRNode n){
 //    StringBuilder sb = new StringBuilder();
@@ -335,7 +344,6 @@ public class SimpleXmlParser {
 //      sb.append(n.getSlotValue(textAttr));
 //    }
 //  }
-
 //  private static void dumpContent(FileWriter w, int indent, IRNode n, boolean withID) throws IOException {
 //   // StringBuilder sb = new StringBuilder();
 //    String type = n.getSlotValue(nodeTypeAttr);
@@ -400,15 +408,11 @@ public class SimpleXmlParser {
 //    }
 //    //return sb.toString();
 //  }
-
-  
-
 //    private static String indent(int n) {
 //    StringBuilder sb = new StringBuilder();
 //    for (int i = 0; i < n; i++) { sb.append(" "); }
 //    return sb.toString();
 //  }
-
 //  private static void dumpAttrs(Writer w, int indent, IRNode n) throws IOException {
 //    AttributeList list = n.getSlotValue(attrListAttr);
 //    for(int i=0; i<list.size(); i++){
@@ -420,7 +424,6 @@ public class SimpleXmlParser {
 //      w.write("\" ");
 //    }
 //  }
-
 //  private static void dumpInkscapeTextNode(Writer w, int indent, IRNode n, boolean withID) throws IOException{
 //    //String type = n.getSlotValue(nodeTypeAttr);
 //    String tagName = n.getSlotValue(tagNameAttr);
@@ -464,65 +467,74 @@ public class SimpleXmlParser {
 //  //    w.write(n.getSlotValue(textAttr));
 //    }
 //  }
-  private static void dumpContent(Writer w, int indent, IRNode n, boolean withID) throws IOException {
-    String tagName = n.getSlotValue(tagNameAttr);
-   // indent(w,indent);
-    w.write("<" );
-    w.write(tagName);
-    String hex = String.format("%08X", n.getSlotValue(SimpleXmlParser.mouidAttr));
-    if (withID) w.write(" "+IDNAME+"=\"" + hex + "\"");
-    w.write(dumpAttrs2(indent, n));
+    private static void dumpContent(Writer w, int indent, IRNode n, boolean withID) throws IOException {
+        String tagName = n.getSlotValue(tagNameAttr);
+        // indent(w,indent);
+//   if(tagName=="w:t")
 
-    int numChildren = tree.numChildren(n);
-    if (numChildren >0){
-      w.write(">\n");
-      for (int i = 0; i < numChildren; i++) {
-        IRNode c = tree.getChild(n,i);
-        dumpContent(w, indent + 2, c, withID);
-      }
-      w.write(indent(indent));
-      w.write("</");
-      w.write(tagName);
-      w.write(">");
-   //   w.write("</"+tagName+">");
-    } else {
-      w.write(" />\n");
+        w.write("<");
+        w.write(tagName);
+        if (tagName == "w:p") {
+            long longid = n.getSlotValue(SimpleXmlParser.mouidAttr);
+            int rsid = (int) (longid >> 32);
+//        int bBack = (int)c;
+            String hex = String.format("%08X", rsid);
+            if (withID) {
+                w.write(" " + IDNAME + "=\"" + hex + "\"");
+            }
+        }
+        w.write(dumpAttrs2(indent, n));
+
+        int numChildren = tree.numChildren(n);
+        if (numChildren > 0) {
+            w.write(">\n");
+            for (int i = 0; i < numChildren; i++) {
+                IRNode c = tree.getChild(n, i);
+                dumpContent(w, indent + 2, c, withID);
+            }
+            w.write(indent(indent));
+            w.write("</");
+            w.write(tagName);
+            w.write(">");
+            //   w.write("</"+tagName+">");
+        } else {
+            w.write(" />\n");
+        }
     }
-  }
 
-  public static void writeToFile(File file, IRNode n) throws IOException{
-    FileWriter w = new FileWriter(file);
-    w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-    dumpContent(w, 0, n, true);
-    w.close();
-  }
+    public static void writeToFile(File file, IRNode n) throws IOException {
+        FileWriter w = new FileWriter(file);
+        w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        dumpContent(w, 0, n, true);
+        w.close();
+    }
 
-  public static void writeToFile(String file, IRNode n) throws IOException{
-		writeToFile(new File(file), n);
-  }
+    public static void writeToFile(String file, IRNode n) throws IOException {
+        writeToFile(new File(file), n);
+    }
 
-  public static String toString(IRNode n) {
-    StringWriter writer = new StringWriter();
-    writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    public static String toString(IRNode n) {
+        StringWriter writer = new StringWriter();
+        writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 //    try { dumpContent(writer, 0, n, true);
 //    } catch (IOException ex) { Exceptions.printStackTrace(ex); }
-    return writer.toString();
-  }
+        return writer.toString();
+    }
 
-  public static String toStringWithID(IRNode n) {
-    StringWriter w= new StringWriter();
-    //w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-    //try { dumpContent(writer, 0, n, true);
-    //} catch (IOException ex) { Exceptions.printStackTrace(ex); }
-    //w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-		try {
-			dumpContent(w, 0, n, true);
-		} catch (IOException ex) {
-			Exceptions.printStackTrace(ex);
-		}
-   // w.close();
-    return w.toString();
-  }
+    public static String toStringWithID(IRNode n) {
+        StringWriter w = new StringWriter();
+        //w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        //try { dumpContent(writer, 0, n, true);
+        //} catch (IOException ex) { Exceptions.printStackTrace(ex); }
+        //w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        try {
+            dumpContent(w, 0, n, true);
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        // w.close();
+        return w.toString();
+    }
 
 //
 //  public static void writeToFile(File file, IRNode n) throws IOException{
@@ -550,74 +562,123 @@ public class SimpleXmlParser {
 //    dumpContent(sb, 0, n, true);
 //    return sb.toString();
 //  }
-  public IRNode parse(File file) throws Exception { return parse(new FileInputStream(file)); }
-  public IRNode parse(Reader reader) throws Exception { return parse(new InputSource(reader)); }
-  public IRNode parse(InputStream is) throws Exception { return parse(new InputSource(is)); }
-  public IRNode parse(String str) throws Exception { return parse(new StringReader(str)); }
-  public IRNode parse(IRNode root, File file) throws Exception { return parse(root, new FileInputStream(file)); }
-  public IRNode parse(IRNode root, Reader reader) throws Exception { return parse(root, new InputSource(reader)); }
-  public IRNode parse(IRNode root, InputStream is) throws Exception { return parse(root, new InputSource(is)); }
-  public IRNode parse(IRNode root, String str) throws Exception { return parse(root, new StringReader(str)); }
-
-  private IRNode parse(InputSource is) throws Exception {
-    XMLReader parser = getReader();
-    NormalParsingHandler handler = new NormalParsingHandler();
-    parser.setContentHandler(handler);
-    parser.parse(is);
-    return handler.getRoot();
-  }
-  private IRNode parse(IRNode root, InputSource is) throws Exception {
-    XMLReader parser = getReader();
-    parser.setContentHandler(new SyncParsingHandler(root));
-    parser.parse(is);
-    return root;
-  }
-
-  /**
-   * This method looks odd but the idea is not to duplicate code for creating
-   * an XML node among different classes.  A class that needs to create an XML
-   * node within a version tracker needs to :
-   * <code>
-   * final static IRNode newNode = new PlainIRNode();
-   * tracker.executeIn(new Runnable() {
-   *     public void run() {
-   *       SimpleXmlParser.initNode(newNode, "noname", null);
-   *     tree.addChild(node, newNode);
-   *   }
-   * })
-   * </code>
-   * @param node
-   * @param tagName
-   * @param attrs
-   */
-public void initNode2(IRNode node, String tagName, Attributes attrs, boolean newNode){
-    node.setSlotValue(tagNameAttr, tagName);
-    AttributeList attrList = new AttributeList(4);
-//    boolean mouidFound = false;
-    for(int i=0; attrs!=null && i<attrs.getLength(); i++){
-      String name = attrs.getQName(i);
-      String val = attrs.getValue(i);
-      //if (name.equals("rsid")){
-      if (name.equals(SimpleXmlParser.IDNAME)){
-//        mouid = Integer.parseInt(val);
-        mouid = (int) Long.parseLong(val,16);
-        if (newNode){
-            node.setSlotValue(mouidAttr, mouid);
-        }else{
-             node.setSlotValue(mouidAttr, mouid);
-            nodeTable.put(mouid, node);
-        }
-//        mouid++;
-//        mouidFound = true;
-        
-      } else {
-        attrList.addAttribute(new Attribute(name, val));
-      }
+    public IRNode parse(File file) throws Exception {
+        return parse(new FileInputStream(file));
     }
-    node.setSlotValue(attrListAttr, attrList);
-    
-    tree.initNode(node);
-  }
+
+    public IRNode parse(Reader reader) throws Exception {
+        return parse(new InputSource(reader));
+    }
+
+    public IRNode parse(InputStream is) throws Exception {
+        return parse(new InputSource(is));
+    }
+
+    public IRNode parse(String str) throws Exception {
+        return parse(new StringReader(str));
+    }
+
+    public IRNode parse(IRNode root, File file) throws Exception {
+        return parse(root, new FileInputStream(file));
+    }
+
+    public IRNode parse(IRNode root, Reader reader) throws Exception {
+        return parse(root, new InputSource(reader));
+    }
+
+    public IRNode parse(IRNode root, InputStream is) throws Exception {
+        return parse(root, new InputSource(is));
+    }
+
+    public IRNode parse(IRNode root, String str) throws Exception {
+        return parse(root, new StringReader(str));
+    }
+
+    private IRNode parse(InputSource is) throws Exception {
+        XMLReader parser = getReader();
+        NormalParsingHandler handler = new NormalParsingHandler();
+        parser.setContentHandler(handler);
+        parser.parse(is);
+        return handler.getRoot();
+    }
+
+    private IRNode parse(IRNode root, InputSource is) throws Exception {
+        XMLReader parser = getReader();
+        parser.setContentHandler(new SyncParsingHandler(root));
+        parser.parse(is);
+        return root;
+    }
+
+    /**
+     * This method looks odd but the idea is not to duplicate code for creating
+     * an XML node among different classes. A class that needs to create an XML
+     * node within a version tracker needs to :      <code>
+   * final static IRNode newNode = new PlainIRNode();
+     * tracker.executeIn(new Runnable() {
+     *     public void run() {
+     *       SimpleXmlParser.initNode(newNode, "noname", null);
+     *     tree.addChild(node, newNode);
+     *   }
+     * })
+     * </code>
+     *
+     * @param node
+     * @param tagName
+     * @param attrs
+     */
+    public void initNode2(IRNode node, String tagName, Attributes attrs, boolean newNode) {
+        node.setSlotValue(tagNameAttr, tagName);
+        AttributeList attrList = new AttributeList(4);
+        long longid;
+        
+        //In the case document and body tag
+        if (tagName.equals(SimpleXmlParser.DOCUMENT_TAG) || tagName.equals(SimpleXmlParser.BODY_TAG)) {
+            wrapid++;
+            longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+            if (newNode) {
+                node.setSlotValue(mouidAttr, longid);
+            } else {
+                node.setSlotValue(mouidAttr, longid);
+                nodeTable.put(longid, node);
+            }
+        }
+        
+        for (int i = 0; attrs != null && i < attrs.getLength(); i++) {
+            String name = attrs.getQName(i);
+            String val = attrs.getValue(i);
+            if (name.equals(SimpleXmlParser.IDNAME)) {
+                //Combining two integer to Long
+                //hi = mouid   lo= wrapid
+                // wrapid for rsidR nodes will be always zero
+                mouid = (int) Long.parseLong(val, 16);
+                wrapid = 0;
+                longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+                if (newNode) {
+                    node.setSlotValue(mouidAttr, longid);
+                } else {
+                    node.setSlotValue(mouidAttr, longid);
+                    nodeTable.put(longid, node);
+                }
+                
+            } else {
+                attrList.addAttribute(new Attribute(name, val));
+            }
+        }
+        
+//        if (attrs.getLength() == 0) {
+//            wrapid++;
+//            longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+//            if (newNode) {
+//                node.setSlotValue(mouidAttr, longid);
+//            } else {
+//                node.setSlotValue(mouidAttr, longid);
+//                nodeTable.put(longid, node);
+//            }
+//        }
+        node.setSlotValue(attrListAttr, attrList);
+
+        tree.initNode(node);
+    }
 
 //  public void initNode(IRNode node, String tagName, Attributes attrs){
 //    node.setSlotValue(tagNameAttr, tagName);
@@ -644,12 +705,11 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //    }
 //    tree.initNode(node);
 //  }
-
-  private IRNode createElementNode(String tagName, Attributes attrs, boolean newNode) {
-    IRNode node = new PlainIRNode();
-    initNode2(node, tagName, attrs, newNode);
-    return node;
-  }
+    private IRNode createElementNode(String tagName, Attributes attrs, boolean newNode) {
+        IRNode node = new PlainIRNode();
+        initNode2(node, tagName, attrs, newNode);
+        return node;
+    }
 
 //  private IRNode createTextNode(String text){
 //    IRNode node = new PlainIRNode();
@@ -660,25 +720,28 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //    tree.initNode(node);
 //    return node;
 //  }
+    private class NormalParsingHandler extends DefaultHandler2 {
 
-  private class NormalParsingHandler extends DefaultHandler2 {
-    private Stack<IRNode> stack = new Stack<IRNode>();
-    private IRNode root;
-    public IRNode getRoot() { return root; }
+        private Stack<IRNode> stack = new Stack<IRNode>();
+        private IRNode root;
 
-    private Vector<String> prefixList= new Vector<String>();
-    private Vector<String> uriList = new Vector<String>();
+        public IRNode getRoot() {
+            return root;
+        }
 
-    @Override
-    public void startPrefixMapping(String prefix, String uri)
-            throws SAXException {
-      prefixList.add(prefix);
-      uriList.add(uri);
-    }
+        private Vector<String> prefixList = new Vector<String>();
+        private Vector<String> uriList = new Vector<String>();
 
-    @Override
-    public void startElement(String nameSpaceURI, String simpleName,
-            String qualifiedName, Attributes attrs) throws SAXException {
+        @Override
+        public void startPrefixMapping(String prefix, String uri)
+                throws SAXException {
+            prefixList.add(prefix);
+            uriList.add(uri);
+        }
+
+        @Override
+        public void startElement(String nameSpaceURI, String simpleName,
+                String qualifiedName, Attributes attrs) throws SAXException {
 
 //      if (inTextMode){
 //        String txt = stringBuffer.toString();
@@ -689,36 +752,38 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //        }
 //      }
 //      inTextMode = false;
-     boolean newNode = false;
-     IRNode node = createElementNode(qualifiedName, attrs, newNode);
-     nodeTable.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
+            boolean newNode = false;
+            IRNode node = createElementNode(qualifiedName, attrs, newNode);
+            nodeTable.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
 
-      //handling namespaces
-      if (!prefixList.isEmpty()){
-        for(int i=0; i<prefixList.size(); i++){
-          String prefix = prefixList.get(i);
-          prefix = prefix.equals("") ? "xmlns" : "xmlns:"+prefix;
-          String uri = uriList.get(i);
-          AttributeList seq =
-                  node.getSlotValue(SimpleXmlParser.attrListAttr);
-          seq.addAttribute(new Attribute(prefix, uri));
+            //handling namespaces
+            if (!prefixList.isEmpty()) {
+                for (int i = 0; i < prefixList.size(); i++) {
+                    String prefix = prefixList.get(i);
+                    prefix = prefix.equals("") ? "xmlns" : "xmlns:" + prefix;
+                    String uri = uriList.get(i);
+                    AttributeList seq
+                            = node.getSlotValue(SimpleXmlParser.attrListAttr);
+                    seq.addAttribute(new Attribute(prefix, uri));
+                }
+                prefixList.clear();
+                uriList.clear();
+            }
+
+            /*8888888888888888888888888888*/
+            if (!stack.isEmpty()) {
+                tree.addChild(stack.peek(), node);
+            } else {
+                root = node;
+            }
+            stack.push(node);
+
+            /*8888888888888888888888888888*/
         }
-        prefixList.clear();
-        uriList.clear();
-      }
 
-      /*8888888888888888888888888888*/
-
-      if (!stack.isEmpty()) { tree.addChild(stack.peek(), node);
-      } else { root = node; }
-      stack.push(node);
-
-      /*8888888888888888888888888888*/
-    }
-
-    @Override
-    public void endElement(String namespaceURI, String simpleName,
-            String qualifiedName) throws SAXException {
+        @Override
+        public void endElement(String namespaceURI, String simpleName,
+                String qualifiedName) throws SAXException {
 //      if (inTextMode){
 //        String txt = stringBuffer.toString();
 //        stringBuffer = null;
@@ -728,39 +793,41 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //          tree.addChild(stack.peek(), n);
 //        }
 //      }
-      stack.pop();
-    }
+            stack.pop();
+        }
 
-    private boolean inTextMode = false;
-    private StringBuilder stringBuffer = null;
-    @Override
-    public void characters(char[] ch, int start, int length)
-            throws SAXException {
+        private boolean inTextMode = false;
+        private StringBuilder stringBuffer = null;
+
+        @Override
+        public void characters(char[] ch, int start, int length)
+                throws SAXException {
 //      if (!inTextMode){
 //        stringBuffer = new StringBuilder();
 //      }
 //      stringBuffer.append(ch, start, length);
 //      inTextMode = true;
+        }
+
     }
 
-  }
+    private class SyncParsingHandler extends DefaultHandler2 {
 
-  private class SyncParsingHandler extends DefaultHandler2 {
-    private IRNode root;
-    private Stack<IRNode> stack = new Stack<IRNode>();
-    private Stack<List<IRNode>> oldChildrenStack = new Stack<List<IRNode>>();
-    private Stack<List<IRNode>> newChildrenStack = new Stack<List<IRNode>>();
-   // private Hashtable<Integer, IRNode> nodes = new Hashtable<Integer, IRNode>();
-    //private Hashtable2<String, IRNode, IRNode> txtNodes =
-    //        new Hashtable2<String, IRNode, IRNode>();
+        private IRNode root;
+        private Stack<IRNode> stack = new Stack<IRNode>();
+        private Stack<List<IRNode>> oldChildrenStack = new Stack<List<IRNode>>();
+        private Stack<List<IRNode>> newChildrenStack = new Stack<List<IRNode>>();
+        // private Hashtable<Integer, IRNode> nodes = new Hashtable<Integer, IRNode>();
+        //private Hashtable2<String, IRNode, IRNode> txtNodes =
+        //        new Hashtable2<String, IRNode, IRNode>();
 
-    private Vector<String> prefixList = new Vector<String>();
-    private Vector<String> uriList = new Vector<String>();
+        private Vector<String> prefixList = new Vector<String>();
+        private Vector<String> uriList = new Vector<String>();
 
-    public SyncParsingHandler(IRNode root) {
-      this.root = root;
-      //buildTable(root);
-    }
+        public SyncParsingHandler(IRNode root) {
+            this.root = root;
+            //buildTable(root);
+        }
 
 //    @Override
 //    public void startPrefixMapping(String prefix, String uri)
@@ -768,44 +835,49 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //      prefixList.add(prefix);
 //      uriList.add(uri);
 //    }
+        @Override
+        public void startElement(String nameSpaceURI, String simpleName,
+                String qualifiedName, Attributes attrs) throws SAXException {
 
-    @Override
-    public void startElement(String nameSpaceURI, String simpleName,
-            String qualifiedName, Attributes attrs) throws SAXException {
-
-      String uid = attrs.getValue(IDNAME);
-      IRNode node = null;
-      List<IRNode> oldChildren = null;
-      boolean newNode = false;
-      
-     // if (uid != null && node !=null) {
-        if (uid != null){
-//            node = nodeTable.get(Integer.parseInt(uid));
-            node = nodeTable.get((int)Long.parseLong(uid,16));
-        if (node == null) {
-            newNode=true;
-            node = createElementNode(qualifiedName, attrs, newNode);
-//          throw new SAXException("Can't find node");
-        }else{
-        
-            if (!node.getSlotValue(tagNameAttr).equals(qualifiedName)){
-              node.setSlotValue(tagNameAttr, qualifiedName);
+            String uid = attrs.getValue(IDNAME);
+            IRNode node = null;
+            List<IRNode> oldChildren = null;
+            boolean newNode = false;
+            
+            if (qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG)){
+                node = nodeTable.get((long) 1);
+            }else if (qualifiedName.equals(SimpleXmlParser.BODY_TAG)) {
+                node = nodeTable.get((long) 2);
             }
 
-            updateAttrs2(node, attrs);
-
-            int numChildren = tree.numChildren(node);
-            oldChildren = new Vector<IRNode>(numChildren);
-            for (int i = 0; i < numChildren; i++) {
-              oldChildren.add(tree.getChild(node, i));
+            if (uid != null) {
+                int int_uid = (int) Long.parseLong(uid, 16);
+                long longid = (long) int_uid << 32 | 0 & 0xFFFFFFFFL;
+                node = nodeTable.get(longid);
             }
-        }
-      } 
+            if (node == null) {
+                newNode = true;
+                node = createElementNode(qualifiedName, attrs, newNode);
+                //          throw new SAXException("Can't find node");
+            } else {
+
+                if (!node.getSlotValue(tagNameAttr).equals(qualifiedName)) {
+                    node.setSlotValue(tagNameAttr, qualifiedName);
+                }
+
+                updateAttrs2(node, attrs);
+
+                int numChildren = tree.numChildren(node);
+                oldChildren = new Vector<IRNode>(numChildren);
+                for (int i = 0; i < numChildren; i++) {
+                    oldChildren.add(tree.getChild(node, i));
+                }
+            }
+
 //        else {
 //        node = createElementNode(qualifiedName, attrs);
 //      }
-
-      //handling namespaces
+            //handling namespaces
 //      if (!prefixList.isEmpty()){
 //        for(int i=0; i<prefixList.size(); i++){
 //          String prefix = prefixList.get(i);
@@ -831,19 +903,20 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //          newChildrenStack.peek().add(n);
 //        }
 //      }
+            oldChildrenStack.push(oldChildren);
+            if (!newChildrenStack.isEmpty()) {
+                newChildrenStack.peek().add(node);
+            }
+            newChildrenStack.push(new Vector<IRNode>());
+            stack.push(node);
 
-      oldChildrenStack.push(oldChildren);
-      if (!newChildrenStack.isEmpty()) newChildrenStack.peek().add(node);
-      newChildrenStack.push(new Vector<IRNode>());
-      stack.push(node);
+        }
 
-    }
+        @Override
+        public void endElement(String namespaceURI, String simpleName,
+                String qualifiedName) throws SAXException {
 
-    @Override
-    public void endElement(String namespaceURI, String simpleName,
-            String qualifiedName) throws SAXException {
-
-      final IRNode n = stack.pop();
+            final IRNode n = stack.pop();
 //      if (inTextMode){
 //        String txt = stringBuffer.toString();
 //        stringBuffer = null;
@@ -857,22 +930,28 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //        }
 //      }
 
-      final List<IRNode> oldChildren = oldChildrenStack.pop();
-      final List<IRNode> newChildren = newChildrenStack.pop();
+            final List<IRNode> oldChildren = oldChildrenStack.pop();
+            final List<IRNode> newChildren = newChildrenStack.pop();
 
-      if (oldChildren != null && oldChildren.equals(newChildren)) { return; }
-      if (oldChildren != null) { tree.removeChildren(n); }
+            if (oldChildren != null && oldChildren.equals(newChildren)) {
+                return;
+            }
+            if (oldChildren != null) {
+                tree.removeChildren(n);
+            }
 
-      for (IRNode c : newChildren) {
-        IRNode t = nodeTable.get(c.getSlotValue(SimpleXmlParser.mouidAttr));
-        if (t!=null) {
-          IRNode p = tree.getParent(c);
-          if (p!=null) tree.removeChild(p, c);
+            for (IRNode c : newChildren) {
+                IRNode t = nodeTable.get((long) c.getSlotValue(SimpleXmlParser.mouidAttr));
+                if (t != null) {
+                    IRNode p = tree.getParent(c);
+                    if (p != null) {
+                        tree.removeChild(p, c);
+                    }
+                }
+                tree.addChild(n, c);
+            }
+
         }
-        tree.addChild(n, c);
-      }
-
-    }
 
 //    private void buildTable(IRNode n) {
 //      String nodeType = n.getSlotValue(SimpleXmlParser.nodeTypeAttr);
@@ -889,7 +968,6 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //        }
 //      }
 //    }
-
 //    private boolean inTextMode = false;
 //    private StringBuilder stringBuffer = null;
 //    @Override
@@ -901,17 +979,20 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //      stringBuffer.append(ch, start, length);
 //      inTextMode = true;
 //    }
-  private void updateAttrs2(IRNode n, Attributes attrs){
-      AttributeList old = n.getSlotValue(SimpleXmlParser.attrListAttr);
-      AttributeList newList = new AttributeList(attrs.getLength());
-      for(int i=0; i<attrs.getLength(); i++){
-        if (!attrs.getQName(i).equals(SimpleXmlParser.IDNAME))
-        newList.addAttribute(new Attribute(attrs.getQName(i), attrs.getValue(i)));
-      }
-      if (old.equals(newList)) return;
-      n.setSlotValue(SimpleXmlParser.attrListAttr, newList);
-      //propagateChange(n);
-    }
+        private void updateAttrs2(IRNode n, Attributes attrs) {
+            AttributeList old = n.getSlotValue(SimpleXmlParser.attrListAttr);
+            AttributeList newList = new AttributeList(attrs.getLength());
+            for (int i = 0; i < attrs.getLength(); i++) {
+                if (!attrs.getQName(i).equals(SimpleXmlParser.IDNAME)) {
+                    newList.addAttribute(new Attribute(attrs.getQName(i), attrs.getValue(i)));
+                }
+            }
+            if (old.equals(newList)) {
+                return;
+            }
+            n.setSlotValue(SimpleXmlParser.attrListAttr, newList);
+            //propagateChange(n);
+        }
 
 //
 // private void updateAttrs(IRNode n, Attributes attrs){
@@ -966,7 +1047,6 @@ public void initNode2(IRNode node, String tagName, Attributes attrs, boolean new
 //      if (changed) n.setSlotValue(SimpleXmlParser.attrsSeqAttr, seq);
 //
 //    }
-  }
+    }
 
 }
-

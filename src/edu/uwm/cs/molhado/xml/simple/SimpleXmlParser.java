@@ -36,6 +36,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Random;
 import java.util.Stack;
 import java.util.Vector;
 import org.openide.util.Exceptions;
@@ -66,7 +67,9 @@ public class SimpleXmlParser {
     public final static String IDNAME = "w:rsidR";
     public final static String DOCUMENT_TAG = "w:document";
     public final static String BODY_TAG = "body";
-
+    public final static String W_R = "w:r";
+    public final static String RSIDRPR = "w:rsidRPr";
+    
     public final static Tree tree;
     public final static SlotInfo<String> nodeTypeAttr;
     public final static SlotInfo<Long> mouidAttr;
@@ -95,7 +98,7 @@ public class SimpleXmlParser {
             treeX = new Tree(TREE, vsf);
             nodeTypeAttrX = csf.newAttribute(NODETYPE, IRStringType.prototype);
 //      mouidAttrX = csf.newAttribute(MOUID, IRIntegerType.prototype);
-            mouidAttrX = csf.newAttribute(MOUID, IRLongType.prototype);
+            mouidAttrX = vsf.newAttribute(MOUID, IRLongType.prototype);
             tagNameX = vsf.newAttribute(TAGNAME, IRStringType.prototype);
             textAttrX = vsf.newAttribute(TEXT, IRStringType.prototype);
             //     attrsX = vsf.newAttribute(ATTRS,
@@ -121,7 +124,10 @@ public class SimpleXmlParser {
     private static Hashtable<Long, IRNode> nodeTable = new Hashtable<Long, IRNode>();
     private int mouid = 0;
     private int wrapid = 0;
-
+    private String uid = "";
+    private String rsidR = "";
+    private String rsidRPr = "";
+    
     public SimpleXmlParser(int nodeCount) {
         this.mouid = nodeCount;
     }
@@ -154,12 +160,20 @@ public class SimpleXmlParser {
         // String input = "<a x='10'><b y='20' z='30'/></a>";
         // IRNode root = p.parse(input);
         // System.out.println(p.toString(root));
+        //parse, add ids and create temporary xml
+        
+        
+//        IRNode t0_stamped = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t0.xml"));
+//        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t0_stamped.xml", t0_stamped, true);
+        
+        
+        p = new SimpleXmlParser(0);
         long startMem = Runtime.getRuntime().totalMemory()
                 - Runtime.getRuntime().freeMemory();
         long t0 = System.currentTimeMillis();
 
 //    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/t0.xml"));
-        IRNode root = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t0.xml"));
+        IRNode root = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/t0_stamped.xml"));
 
         Version v0 = Version.getVersion();
         tagNameAttr.addDefineObserver(changeRecord);
@@ -190,7 +204,7 @@ public class SimpleXmlParser {
         Version v3 = merge.merge();
         long t4 = System.currentTimeMillis();
         Version.saveVersion(v3);
-        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/out.xml", root);
+        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\doc/out.xml", root, false);
         long t5 = System.currentTimeMillis();
 
         long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -467,17 +481,24 @@ public class SimpleXmlParser {
 //  //    w.write(n.getSlotValue(textAttr));
 //    }
 //  }
-    private static void dumpContent(Writer w, int indent, IRNode n, boolean withID) throws IOException {
+    private static void dumpContent(Writer w, int indent, IRNode n, boolean withID, boolean assignID) throws IOException {
         String tagName = n.getSlotValue(tagNameAttr);
         // indent(w,indent);
 //   if(tagName=="w:t")
 
         w.write("<");
         w.write(tagName);
-        if (tagName == "w:p") {
+        if (tagName.equals(SimpleXmlParser.W_R)) {
+            long longid = n.getSlotValue(SimpleXmlParser.mouidAttr);
+//            int rsid = (int) (longid >> 32);
+            int wrapid = (int)longid;
+            String hex = String.format("%08X", wrapid);
+            if (withID) {
+                w.write(" " + RSIDRPR + "=\"" + hex + "\"");
+            }
+        } else if (tagName == "w:p") {
             long longid = n.getSlotValue(SimpleXmlParser.mouidAttr);
             int rsid = (int) (longid >> 32);
-//        int bBack = (int)c;
             String hex = String.format("%08X", rsid);
             if (withID) {
                 w.write(" " + IDNAME + "=\"" + hex + "\"");
@@ -490,7 +511,7 @@ public class SimpleXmlParser {
             w.write(">\n");
             for (int i = 0; i < numChildren; i++) {
                 IRNode c = tree.getChild(n, i);
-                dumpContent(w, indent + 2, c, withID);
+                dumpContent(w, indent + 2, c, withID, assignID);
             }
             w.write(indent(indent));
             w.write("</");
@@ -502,15 +523,15 @@ public class SimpleXmlParser {
         }
     }
 
-    public static void writeToFile(File file, IRNode n) throws IOException {
+    public static void writeToFile(File file, IRNode n, boolean assignID) throws IOException {
         FileWriter w = new FileWriter(file);
         w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        dumpContent(w, 0, n, true);
+        dumpContent(w, 0, n, true, assignID);
         w.close();
     }
 
-    public static void writeToFile(String file, IRNode n) throws IOException {
-        writeToFile(new File(file), n);
+    public static void writeToFile(String file, IRNode n, boolean assignID) throws IOException {
+        writeToFile(new File(file), n, assignID);
     }
 
     public static String toString(IRNode n) {
@@ -528,7 +549,7 @@ public class SimpleXmlParser {
         //} catch (IOException ex) { Exceptions.printStackTrace(ex); }
         //w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         try {
-            dumpContent(w, 0, n, true);
+            dumpContent(w, 0, n, true, false);
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
@@ -613,7 +634,7 @@ public class SimpleXmlParser {
      * This method looks odd but the idea is not to duplicate code for creating
      * an XML node among different classes. A class that needs to create an XML
      * node within a version tracker needs to :      <code>
-   * final static IRNode newNode = new PlainIRNode();
+     * final static IRNode newNode = new PlainIRNode();
      * tracker.executeIn(new Runnable() {
      *     public void run() {
      *       SimpleXmlParser.initNode(newNode, "noname", null);
@@ -630,7 +651,7 @@ public class SimpleXmlParser {
         node.setSlotValue(tagNameAttr, tagName);
         AttributeList attrList = new AttributeList(4);
         long longid;
-        
+
         //In the case document and body tag
         if (tagName.equals(SimpleXmlParser.DOCUMENT_TAG) || tagName.equals(SimpleXmlParser.BODY_TAG)) {
             wrapid++;
@@ -642,7 +663,33 @@ public class SimpleXmlParser {
                 nodeTable.put(longid, node);
             }
         }
-        
+        if(attrs.getValue(SimpleXmlParser.RSIDRPR)== null && tagName.equals(SimpleXmlParser.W_R) ){
+            do{
+                wrapid = (int) Long.parseLong(getRandomHexString(8),16);
+                longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+            }while(nodeTable.containsKey(longid));
+            
+            if (newNode) {
+                node.setSlotValue(mouidAttr, longid);
+                rsidRPr = String.format("%08X", wrapid);
+                
+            } else {
+                node.setSlotValue(mouidAttr, longid);
+                nodeTable.put(longid, node);
+            }
+        }
+        if(tagName.equals("w:t") ){
+            longid = (((long) wrapid) << 32) | (0 & 0xffffffffL);
+            
+            if (newNode) {
+                node.setSlotValue(mouidAttr, longid);
+                
+            } else {
+                node.setSlotValue(mouidAttr, longid);
+                nodeTable.put(longid, node);
+            }
+        }
+
         for (int i = 0; attrs != null && i < attrs.getLength(); i++) {
             String name = attrs.getQName(i);
             String val = attrs.getValue(i);
@@ -659,12 +706,22 @@ public class SimpleXmlParser {
                     node.setSlotValue(mouidAttr, longid);
                     nodeTable.put(longid, node);
                 }
-                
-            } else {
+
+            } else if(tagName.equals(SimpleXmlParser.W_R) && name.equals(SimpleXmlParser.RSIDRPR)) {
+                wrapid = (int) Long.parseLong(val, 16);
+                longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+                if (newNode) {
+                    node.setSlotValue(mouidAttr, longid);
+                    rsidRPr = String.format("%08X", wrapid);
+                } else {
+                    node.setSlotValue(mouidAttr, longid);
+                    nodeTable.put(longid, node);
+                }
+            } else{
                 attrList.addAttribute(new Attribute(name, val));
             }
         }
-        
+
 //        if (attrs.getLength() == 0) {
 //            wrapid++;
 //            longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
@@ -679,7 +736,17 @@ public class SimpleXmlParser {
 
         tree.initNode(node);
     }
+    
+    private String getRandomHexString(int numchars){
+        Random r = new Random();
+        StringBuffer sb = new StringBuffer();
+        while(sb.length() < numchars){
+            sb.append(Integer.toHexString(r.nextInt()));
+        }
 
+        return sb.toString().substring(0, numchars);
+    }
+    
 //  public void initNode(IRNode node, String tagName, Attributes attrs){
 //    node.setSlotValue(tagNameAttr, tagName);
 //    IRSequence<Property> sq = VersionedSlotFactory.prototype.newSequence(-1);
@@ -838,26 +905,43 @@ public class SimpleXmlParser {
         @Override
         public void startElement(String nameSpaceURI, String simpleName,
                 String qualifiedName, Attributes attrs) throws SAXException {
-
-            String uid = attrs.getValue(IDNAME);
+            
+            
+            
+            
             IRNode node = null;
             List<IRNode> oldChildren = null;
             boolean newNode = false;
-            
+
             if (qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG)){
                 node = nodeTable.get((long) 1);
             }else if (qualifiedName.equals(SimpleXmlParser.BODY_TAG)) {
                 node = nodeTable.get((long) 2);
             }
-
-            if (uid != null) {
-                int int_uid = (int) Long.parseLong(uid, 16);
-                long longid = (long) int_uid << 32 | 0 & 0xFFFFFFFFL;
+            
+            int int_rsidR, int_rsidRPr;
+            long longid = 0;
+            if (qualifiedName.equals("w:p") && attrs.getValue(IDNAME) != null){
+                rsidR = attrs.getValue(IDNAME);
+                int_rsidR = (int) Long.parseLong(rsidR, 16);
+                longid = (long) int_rsidR << 32 | 0 & 0xFFFFFFFFL;
+            }else if(qualifiedName.equals("w:r") && attrs.getValue(RSIDRPR) != null){
+                rsidRPr = attrs.getValue(RSIDRPR);
+                int_rsidR = (int) Long.parseLong(rsidR, 16);
+                int_rsidRPr = (int) Long.parseLong(rsidRPr, 16);
+                longid = (long) int_rsidR << 32 | int_rsidRPr & 0xFFFFFFFFL;
+            }else if(qualifiedName.equals("w:t")){
+                int_rsidRPr = (int) Long.parseLong(rsidRPr, 16);
+                longid = (long) int_rsidRPr << 32 | 0 & 0xFFFFFFFFL;
+            }
+            
+            if (longid != 0) {//                
                 node = nodeTable.get(longid);
             }
             if (node == null) {
                 newNode = true;
                 node = createElementNode(qualifiedName, attrs, newNode);
+                
                 //          throw new SAXException("Can't find node");
             } else {
 

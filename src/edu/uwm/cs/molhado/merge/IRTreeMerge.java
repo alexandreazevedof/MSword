@@ -134,7 +134,7 @@ public class IRTreeMerge {
           attrs.add(attr1.getName());
           continue;
         }
-        if (!val0.equals(val1) && !val0.equals(val2)) attrs.add(attr1.getName());
+        if (val0 !=null && !val0.equals(val1) && !val0.equals(val2)) attrs.add(attr1.getName());
       }
     }
 

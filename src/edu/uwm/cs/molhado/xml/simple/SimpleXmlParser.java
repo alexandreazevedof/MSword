@@ -55,6 +55,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
  */
 public class SimpleXmlParser {
 
+    public int c = 0;
     public final static String TREE = "axml.tree";
     public final static String NODETYPE = "axml.type";
     public final static String MOUID = "axml.mouid";
@@ -123,6 +124,8 @@ public class SimpleXmlParser {
         tree.saveAttributes(bundle);
     }
     private static Hashtable<Long, IRNode> nodeTable = new Hashtable<Long, IRNode>();
+    private static Hashtable<Long, String> idTextTable = new Hashtable<Long, String>();
+    private static Hashtable<Integer, String> idsTable = new Hashtable<Integer, String>();
     private int mouid = 0;
     private int wrapid = 0;
     private String uid = "";
@@ -161,16 +164,18 @@ public class SimpleXmlParser {
         // String input = "<a x='10'><b y='20' z='30'/></a>";
         // IRNode root = p.parse(input);
         // System.out.println(p.toString(root));
+        
+        String dir = "big_doc\\thesis";
         //parse, add ids and create temporary xml
-//        IRNode t0_stamped = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\style/t0.xml"));
-//        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\style/t0_stamped.xml", t0_stamped, true);
+//        IRNode t0_stamped = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\"+dir+"\\t0.xml"));
+//        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\"+dir+"\\t0_stamped.xml", t0_stamped, true);
         p = new SimpleXmlParser(0);
         long startMem = Runtime.getRuntime().totalMemory()
                 - Runtime.getRuntime().freeMemory();
         long t0 = System.currentTimeMillis();
 
 //    IRNode root = p.parse(new File("/home/alex/NetBeansProjects/momerge/dist/t0.xml"));
-        IRNode root = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\style/t0_stamped.xml"));
+        IRNode root = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\"+dir+"\\t0_stamped.xml"));
 
         Version v0 = Version.getVersion();
         tagNameAttr.addDefineObserver(changeRecord);
@@ -183,13 +188,13 @@ public class SimpleXmlParser {
 
         long t1 = System.currentTimeMillis();
 //    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/t1.xml"));
-        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\style/t1.xml"));
+        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\"+dir+"\\t1.xml"));
         Version v1 = Version.getVersion();
         long t2 = System.currentTimeMillis();
         Version.saveVersion(v0);
 
 //    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/t2.xml"));
-        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\style/t2.xml"));
+        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\"+dir+"\\t2.xml"));
         long t3 = System.currentTimeMillis();
         //nodeTable = null;
         Version v2 = Version.getVersion();
@@ -201,7 +206,7 @@ public class SimpleXmlParser {
         Version v3 = merge.merge();
         long t4 = System.currentTimeMillis();
         Version.saveVersion(v3);
-        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\style/out.xml", root, false);
+        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\"+dir+"\\output.xml", root, false);
         long t5 = System.currentTimeMillis();
 
         long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -482,7 +487,7 @@ public class SimpleXmlParser {
 //  }
     private static void dumpContent(Writer w, int indent, IRNode n, boolean withID, boolean assignID) throws IOException {
         String tagName = n.getSlotValue(tagNameAttr);
-
+        
         w.write("<");
         w.write(tagName);
         if (tagName.equals(SimpleXmlParser.W_R)) {
@@ -516,13 +521,24 @@ public class SimpleXmlParser {
             w.write(">");
             //   w.write("</"+tagName+">");
         } else {
+            if (tagName.equals("w:t")) {
+                w.write(">");
+                if (idTextTable.get(n.getSlotValue(SimpleXmlParser.mouidAttr)) != null) {
+                    w.write(idTextTable.get(n.getSlotValue(SimpleXmlParser.mouidAttr)));
+                }
+
+                w.write("</");
+                w.write(tagName);
+                w.write(">");
+                return;
+            }
             w.write(" />\n");
         }
     }
 
     public static void writeToFile(File file, IRNode n, boolean assignID) throws IOException {
         FileWriter w = new FileWriter(file);
-        w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        w.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
         dumpContent(w, 0, n, true, assignID);
         w.close();
     }
@@ -647,58 +663,71 @@ public class SimpleXmlParser {
     public void initNode2(IRNode node, String tagName, Attributes attrs, boolean newNode) {
         node.setSlotValue(tagNameAttr, tagName);
         AttributeList attrList = new AttributeList(4);
-        long longid = 0;
+
+        long longid = -1;
 
         //In the case document and body tag
         if (tagName.equals(SimpleXmlParser.DOCUMENT_TAG) || tagName.equals(SimpleXmlParser.BODY_TAG)) {
             wrapid++;
             longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
-
-        }else if ((attrs.getValue(SimpleXmlParser.RSIDRPR) == null || nodeTable.contains(attrs.getValue(SimpleXmlParser.RSIDRPR)))  && tagName.equals(SimpleXmlParser.W_R)) {
+//|| nodeTable.contains(attrs.getValue(SimpleXmlParser.RSIDRPR)
+        } else if ((attrs.getValue(SimpleXmlParser.RSIDRPR) == null ) && tagName.equals(SimpleXmlParser.W_R)) {
             //creates new random generated rsidRPr for the <w:r> tags when rsidRPr is not present
             do {
                 wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
                 longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
-            } while (nodeTable.containsKey(longid));
-
+            } while (nodeTable.containsKey(longid) || idsTable.containsKey(wrapid));
+            idsTable.put(wrapid,tagName);
             if (newNode) {
                 rsidRPr = String.format("%08X", wrapid);
             }
-        }else{      
-        //if (tagName.equals("w:t")) {
+        } else if (tagName.equals("w:p")) {
+            //do nothing
+        } else {
+            //if (tagName.equals("w:t")) {
             longid = (((long) wrapid) << 32) | (tagName.hashCode() & 0xffffffffL);
         }
 
         for (int i = 0; attrs != null && i < attrs.getLength(); i++) {
             String name = attrs.getQName(i);
             String val = attrs.getValue(i);
-            if (name.equals(SimpleXmlParser.IDNAME)) {
+            if (name.equals(SimpleXmlParser.IDNAME) && tagName.equals("w:p")) {
                 //Combining two integer to Long
                 //hi = mouid   lo= wrapid
                 // wrapid for rsidR nodes will be always zero
                 mouid = (int) Long.parseLong(val, 16);
                 wrapid = 0;
                 longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+                while (nodeTable.containsKey(longid) || idsTable.containsKey(mouid)) {
+                    mouid = (int) Long.parseLong(getRandomHexString(8), 16);
+                    longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+                }
+                idsTable.put(mouid,tagName);
 
             } else if (tagName.equals(SimpleXmlParser.W_R) && name.equals(SimpleXmlParser.RSIDRPR)) {
+//                if(val.equals("00732CF0")){
+//                    System.out.print("");
+//                }
                 wrapid = (int) Long.parseLong(val, 16);
                 longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+//                -6891720328633701136
                 /*if rsidRPr is alredy present, generate a new one*/
-                while(nodeTable.containsKey(longid)){
+                while (nodeTable.containsKey(longid) || idsTable.containsKey(wrapid)) {
                     wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
                     longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
                 }
-                
+                //7548144
+                idsTable.put(wrapid,tagName);
                 if (newNode) {
                     rsidRPr = String.format("%08X", wrapid);
-                } 
+                }
 //                
             } else {
                 attrList.addAttribute(new Attribute(name, val));
             }
         }
-        
-        if (longid != 0) {
+
+        if (longid != -1) {
             if (newNode) {
                 node.setSlotValue(mouidAttr, longid);
             } else {
@@ -711,7 +740,7 @@ public class SimpleXmlParser {
 
         tree.initNode(node);
     }
-    
+
     private String getRandomHexString(int numchars) {
         UUID r = UUID.randomUUID();
         int rand = (int) r.getLeastSignificantBits();
@@ -792,6 +821,19 @@ public class SimpleXmlParser {
 //      inTextMode = false;
             
             boolean newNode = false;
+            if(!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals("w:p") && !qualifiedName.equals(SimpleXmlParser.W_R)){
+                boolean valid = false;
+                Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
+                while (!temp.isEmpty()) {
+                    if (temp.pop().getSlotValue(tagNameAttr).equals(SimpleXmlParser.W_R)) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    return;
+                }
+            }
             IRNode node = createElementNode(qualifiedName, attrs, newNode);
             nodeTable.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
 
@@ -815,7 +857,7 @@ public class SimpleXmlParser {
             } else {
                 root = node;
             }
-                                
+
             stack.push(node);
 
             /*8888888888888888888888888888*/
@@ -833,6 +875,20 @@ public class SimpleXmlParser {
 //          tree.addChild(stack.peek(), n);
 //        }
 //      }
+            if(!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals("w:p") && !qualifiedName.equals(SimpleXmlParser.W_R)){
+                boolean valid = false;
+                Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
+                while (!temp.isEmpty()) {
+                    if (temp.pop().getSlotValue(tagNameAttr).equals(SimpleXmlParser.W_R)) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    return;
+                }
+            }
+            
             stack.pop();
         }
 
@@ -842,11 +898,22 @@ public class SimpleXmlParser {
         @Override
         public void characters(char[] ch, int start, int length)
                 throws SAXException {
-//      if (!inTextMode){
-//        stringBuffer = new StringBuilder();
-//      }
-//      stringBuffer.append(ch, start, length);
-//      inTextMode = true;
+//            if (!inTextMode) {
+//                stringBuffer = new StringBuilder();
+//            }
+            if(stack.peek().getSlotValue(tagNameAttr).equals("w:t")){
+                long longId = stack.peek().getSlotValue(SimpleXmlParser.mouidAttr);
+                if(idTextTable.containsKey(longId)){
+                    
+                    String t = idTextTable.get(longId);
+                    t = t +""+new String(ch,start,length);
+                    idTextTable.put(longId, t );
+                }else{
+                    idTextTable.put(longId, new String(ch,start,length) );
+                }
+            }
+//            stringBuffer.append(ch, start, length);
+//            inTextMode = true;
         }
 
     }
@@ -882,9 +949,21 @@ public class SimpleXmlParser {
             IRNode node = null;
             List<IRNode> oldChildren = null;
             boolean newNode = false;
-
             
-
+            if(!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals("w:p") && !qualifiedName.equals(SimpleXmlParser.W_R)){
+                boolean valid = false;
+                Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
+                while (!temp.isEmpty()) {
+                    if (temp.pop().getSlotValue(tagNameAttr).equals(SimpleXmlParser.W_R)) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    return;
+                }
+            }
+            
             int int_rsidR, int_rsidRPr;
             long longid = 0;
             if (qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG)) {
@@ -900,7 +979,7 @@ public class SimpleXmlParser {
                 int_rsidR = (int) Long.parseLong(rsidR, 16);
                 int_rsidRPr = (int) Long.parseLong(rsidRPr, 16);
                 longid = (long) int_rsidR << 32 | int_rsidRPr & 0xFFFFFFFFL;
-            } else{ 
+            } else {
 //                if (qualifiedName.equals("w:t")) {
                 int_rsidRPr = (int) Long.parseLong(rsidRPr, 16);
                 longid = (long) int_rsidRPr << 32 | qualifiedName.hashCode() & 0xFFFFFFFFL;
@@ -970,7 +1049,21 @@ public class SimpleXmlParser {
         @Override
         public void endElement(String namespaceURI, String simpleName,
                 String qualifiedName) throws SAXException {
-
+            
+            if(!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals("w:p") && !qualifiedName.equals(SimpleXmlParser.W_R)){
+                boolean valid = false;
+                Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
+                while (!temp.isEmpty()) {
+                    if (temp.pop().getSlotValue(tagNameAttr).equals(SimpleXmlParser.W_R)) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    return;
+                }
+            }
+            
             final IRNode n = stack.pop();
 //      if (inTextMode){
 //        String txt = stringBuffer.toString();
@@ -1004,6 +1097,25 @@ public class SimpleXmlParser {
                     }
                 }
                 tree.addChild(n, c);
+            }
+
+        }
+        @Override
+        public void characters(char[] ch, int start, int length)
+                throws SAXException {
+
+            if(stack.peek().getSlotValue(tagNameAttr).equals("w:t")){
+                long longId = stack.peek().getSlotValue(SimpleXmlParser.mouidAttr);
+                if(idTextTable.containsKey(longId)){
+                    
+                    String t = idTextTable.get(longId);
+                    if(!t.equals(new String(ch,start,length))){
+                        t = t +""+new String(ch,start,length);
+                        idTextTable.put(longId, t );
+                    }
+                }else{
+                    idTextTable.put(longId, new String(ch,start,length) );
+                }
             }
 
         }

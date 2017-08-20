@@ -1,5 +1,6 @@
 package edu.uwm.cs.molhado.merge;
 
+import edu.uwm.cs.molhado.xml.simple.SimpleXmlParser;
 import java.util.Vector;
 
 /**

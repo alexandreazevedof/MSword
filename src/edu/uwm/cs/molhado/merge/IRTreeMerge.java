@@ -334,7 +334,14 @@ public class IRTreeMerge {
               Version.saveVersion(v2);
               IRNode bParent = tree.getParent(o);
               Version.restoreVersion();
-
+              
+//                String a = aParent.getSlotValue(SimpleXmlParser.tagNameAttr);
+//                String b = bParent.getSlotValue(SimpleXmlParser.tagNameAttr);
+//                System.out.print(a+" "+b);
+//              if(bParent.getSlotValue(SimpleXmlParser.mouidAttr) == aParent.getSlotValue(SimpleXmlParser.mouidAttr)){
+//                  System.out.print(bParent.getSlotValue(SimpleXmlParser.mouidAttr));
+//              }
+              
               if (aParent == null && bParent == null) continue;
               String desc = "Conflicting moves:";
               if (aParent!=bParent){
@@ -528,14 +535,15 @@ public class IRTreeMerge {
     v2 = tracker2.getVersion();
 
     getConflictingInfos();
-
-    if (conflictingNodes.size() > 0) return null;
+    System.out.println("Conflicts:"+conflictingNodes.size());
+//    if (conflictingNodes.size() > 0) return null;
 
     Version.setVersion(v2);
     Iterator<IRNode> changes = changeRecord.iterator(tree, root, v0, v1);
     outer:while (changes.hasNext()) {
       IRNode node = changes.next();
       mergeAttributes2(node);
+        
       if (!isInVersion(node, v0)) {
         //is this even possible?
         continue;

@@ -149,8 +149,14 @@ public class SimpleXmlParser {
     private int tableColumnCount = 0;
     private Hashtable<Long, IRNode> tblGrid_tags = new Hashtable<Long, IRNode>();
     private Hashtable<Long, IRNode> tblGrid_tags_copy = new Hashtable<Long, IRNode>();
+    private List<TableGrid> tableGridList = new ArrayList<TableGrid>();
     private static boolean stamp = false;
-
+    private static boolean isT1 = true;
+    
+    private static List<Tag> tagListT0 = new ArrayList<Tag>();
+    private static List<Tag> tagListT1 = new ArrayList<Tag>();
+    private static List<Tag> tagListT2 = new ArrayList<Tag>();
+    
     public SimpleXmlParser(int nodeCount) {
         this.mouid = nodeCount;
     }
@@ -183,7 +189,7 @@ public class SimpleXmlParser {
         // String input = "<a x='10'><b y='20' z='30'/></a>";
         // IRNode root = p.parse(input);
         // System.out.println(p.toString(root));
-        String dir = "tables";
+        String dir = "big_doc\\thesis";
         //parse, add ids and create temporary xml
         
 //        stamp = true;
@@ -208,11 +214,12 @@ public class SimpleXmlParser {
 
         long t1 = System.currentTimeMillis();
 //    p.parse(root, new File("/home/alex/NetBeansProjects/momerge/dist/t1.xml"));
-        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t3.xml"));
+        p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t1.xml"));
         Version v1 = Version.getVersion();
         long t2 = System.currentTimeMillis();
         Version.saveVersion(v0);
 
+        isT1 = false;
 //    p.parse( root, new File("/home/alex/NetBeansProjects/momerge/dist/t2.xml"));
         p.parse(root, new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t2.xml"));
         long t3 = System.currentTimeMillis();
@@ -222,7 +229,31 @@ public class SimpleXmlParser {
 
         IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
                 root, new VersionMarker(v1), new VersionMarker(v0), new VersionMarker(v2));
-
+        
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        for(int i=0; i< tagListT0.size(); i++){
+            if(tagListT0.get(i).id != tagListT1.get(i).id){
+                System.out.println("Conflict:  T0-T1 ");
+                System.out.println("TagT0: "+tagListT0.get(i).tag + " ID:"+tagListT0.get(i).id);
+                System.out.println("TagT1: "+tagListT1.get(i).tag + " ID:"+tagListT1.get(i).id);
+                System.out.println("");
+            }
+            
+//            if(tagListT0.get(i).id != tagListT2.get(i).id){
+//                System.out.println("Conflict:  T0-T2 ");
+//                System.out.println("Tag: "+tagListT2.get(i).tag + " ID:"+tagListT2.get(i).id);
+//                System.out.println("");
+//            }
+//            
+//            if(tagListT1.get(i).id != tagListT2.get(i).id){
+//                System.out.println("Conflict:  T1-T2 ");
+//                System.out.println("Tag: "+tagListT2.get(i).tag + " ID:"+tagListT2.get(i).id);
+//                System.out.println("");
+//            }
+            
+        }
         Version v3 = merge.merge();
         long t4 = System.currentTimeMillis();
         Version.saveVersion(v3);
@@ -687,7 +718,30 @@ public class SimpleXmlParser {
         }
 
     }
+    
+    private static class Tag{
+        String tag;
+        Long id;
+        
+        public Tag(String tag, Long id){
+            this.tag = tag;
+            this.id = id;
+        }
+    }
 
+    private static class TableGrid{
+            
+            public int tableID;
+            public Long insideTagID;
+            public IRNode node;
+            
+            private TableGrid(int tableID, Long insideTagID, IRNode node){
+                this.tableID = tableID;
+                this.insideTagID = insideTagID;
+                this.node = node;
+            }
+        }
+    
     public Tuple convertStreamToString(InputStream is) throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
@@ -875,7 +929,10 @@ public class SimpleXmlParser {
                 attrList.addAttribute(new Attribute(name, val));
             }
         }
-
+        
+        System.out.println(tagName+" "+longid);
+        
+        
         if (longid != -1) {
             if (newNode) {
                 node.setSlotValue(mouidAttr, longid);
@@ -890,6 +947,8 @@ public class SimpleXmlParser {
 //        if(!newNode){
             tree.initNode(node);
 //        }
+
+        
     }
 
     private String getRandomHexString(int numchars) {
@@ -1043,9 +1102,9 @@ public class SimpleXmlParser {
             boolean WtbGridchild = false;
             boolean WTCchild = false;
             
-            if(qualifiedName.equals("w:tr")){
-                System.out.println("");
-            }
+//            if(qualifiedName.equals("w:tr")){
+//                System.out.println("");
+//            }
             
             if(qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd")) return;
             
@@ -1056,20 +1115,19 @@ public class SimpleXmlParser {
             if (qualifiedName.equals("w:tc")) {
                 tableColumnCount++;
             }
-
+            
+            //
+            //Identify Who is/are the parent(s) of current tag
+            //
             if (!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals(SimpleXmlParser.W_R)) {
                 
                 if(qualifiedName.equals("w:p")) WPchild=true;
                 
-                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) {
-                    WpPRchild = true;
-                }
-                if (qualifiedName.equals("w:tbl")) {
-                    WTBchild = true;
-                }
-                if (qualifiedName.equals("w:tblPr")) {
-                    WtbPRchild = true;
-                }
+                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) WpPRchild = true; 
+                
+                if (qualifiedName.equals("w:tbl")) WTBchild = true;
+                
+                if (qualifiedName.equals("w:tblPr")) WtbPRchild = true;
                 
                 if(qualifiedName.equals("w:tblGrid")) WtbGridchild=true;
 
@@ -1114,10 +1172,13 @@ public class SimpleXmlParser {
             //Tags inside tblGrid can repeat themself. To keep track, tblGrid has it own Hashtable
             if(WtbGridchild && !qualifiedName.equals("w:tblGrid")){
                 tblGrid_tags.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
+                
+                tableGridList.add(new TableGrid(tableid, node.getSlotValue(SimpleXmlParser.mouidAttr), node));
             }
             
             
             System.out.println(qualifiedName+" - "+node.getSlotValue(SimpleXmlParser.mouidAttr)+" => "+node.toString());
+            
             //handling namespaces
             if (!prefixList.isEmpty()) {
                 for (int i = 0; i < prefixList.size(); i++) {
@@ -1142,6 +1203,8 @@ public class SimpleXmlParser {
             stack.push(node);
 
             /*8888888888888888888888888888*/
+            
+            tagListT0.add(new Tag(qualifiedName, node.getSlotValue(SimpleXmlParser.mouidAttr)));
         }
 
         @Override
@@ -1168,18 +1231,18 @@ public class SimpleXmlParser {
             
             if(qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd")) return;
 
+            //
+            //Identify Who is/are the parent(s) of current tag
+            //
             if (!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals(SimpleXmlParser.W_R)) {
-
-                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) {
-                    WpPRchild = true;
-                }
-                if (qualifiedName.equals("w:tbl")) {
-                    WTBchild = true;
-                }
-                if (qualifiedName.equals("w:tblPr")) {
-                    WtbPRchild = true;
-                }
+                
                 if(qualifiedName.equals("w:p")) WPchild=true;
+                
+                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) WpPRchild = true; 
+                
+                if (qualifiedName.equals("w:tbl")) WTBchild = true;
+                
+                if (qualifiedName.equals("w:tblPr")) WtbPRchild = true;
                 
                 if(qualifiedName.equals("w:tblGrid")) WtbGridchild=true;
 
@@ -1207,6 +1270,7 @@ public class SimpleXmlParser {
                     }
                     temp.pop();
                 }
+                
 
                 if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild) {
                     return;
@@ -1393,7 +1457,9 @@ public class SimpleXmlParser {
                     rsidR = attrs.getValue(IDNAME);
                     int_rsidR = (int) Long.parseLong(rsidR, 16);
                     longid = (((long) int_tableID) << 32) | (int_rsidR & 0xFFFFFFFFL);
-                    if(idTRTable.containsKey(int_rsidR)){
+                    if(nodeTable.get(longid) != null){
+                        
+                    }else if(idTRTable.containsKey(int_rsidR)){
                         longid = -1;
                     }else{
                         idTRTable.put(int_rsidR,qualifiedName);
@@ -1450,9 +1516,11 @@ public class SimpleXmlParser {
                 if(WtbGridchild && !qualifiedName.equals("w:tblGrid")){
                     Enumeration<IRNode> nodeList = tblGrid_tags_copy.elements();
                     IRNode n;
-                    
+                    Long aa = node2.getSlotValue(SimpleXmlParser.mouidAttr);
+                    Long bb;
                     while(nodeList.hasMoreElements()){
                         n = nodeList.nextElement();
+                        bb = n.getSlotValue(SimpleXmlParser.mouidAttr);
                         if (n != null && compareNodes(n, node2)) {
                             node = n;
                             tblGrid_tags_copy.remove(n.getSlotValue(SimpleXmlParser.mouidAttr));
@@ -1504,7 +1572,14 @@ public class SimpleXmlParser {
             }
             newChildrenStack.push(new Vector<IRNode>());
             stack.push(node);
-System.out.println(qualifiedName+" - "+node.getSlotValue(SimpleXmlParser.mouidAttr)+" => "+node.toString());
+            
+            System.out.println(qualifiedName+" - "+node.getSlotValue(SimpleXmlParser.mouidAttr)+" => "+node.toString());
+            
+            if(isT1){
+                tagListT1.add(new Tag(qualifiedName,node.getSlotValue(SimpleXmlParser.mouidAttr) ));
+            }else{
+                tagListT2.add(new Tag(qualifiedName,node.getSlotValue(SimpleXmlParser.mouidAttr) ));
+            }
         }
 
         @Override
@@ -1679,6 +1754,9 @@ System.out.println(qualifiedName+" - "+node.getSlotValue(SimpleXmlParser.mouidAt
             //propagateChange(n);
         }
 
+        
+        
+        
 //
 // private void updateAttrs(IRNode n, Attributes attrs){
 //      IRSequence<Property> seq = n.getSlotValue(SimpleXmlParser.attrsSeqAttr);

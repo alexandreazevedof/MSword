@@ -29,13 +29,17 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -137,26 +141,31 @@ public class SimpleXmlParser {
     private static Hashtable<Integer, String> idTRTable = new Hashtable<Integer, String>();  //avoid rsidR repetition on w:tr syncparse
     private int mouid = 0;
     private int wrapid = 0;
+    private int fldCharId = 0;
+    private int sectPrid = 0;
+    private int int_fldCharID = 0;
     private boolean wtc_ID_used = false;
     private static int tableid = 0;
     private String uid = "";
     private String rsidR = "";
+    private String sectPr = "";
     private String rsidRPr = "";
     private String tableID = "";
     private boolean ignoreTag = false;
     private String XMLstring = "";
     private int tablesCount = 0;
+    private int wrCount = 0;
     private int tableColumnCount = 0;
     private Hashtable<Long, IRNode> tblGrid_tags = new Hashtable<Long, IRNode>();
     private Hashtable<Long, IRNode> tblGrid_tags_copy = new Hashtable<Long, IRNode>();
     private List<TableGrid> tableGridList = new ArrayList<TableGrid>();
     private static boolean stamp = false;
     private static boolean isT1 = true;
-    
+
     private static List<Tag> tagListT0 = new ArrayList<Tag>();
     private static List<Tag> tagListT1 = new ArrayList<Tag>();
     private static List<Tag> tagListT2 = new ArrayList<Tag>();
-    
+
     public SimpleXmlParser(int nodeCount) {
         this.mouid = nodeCount;
     }
@@ -191,11 +200,11 @@ public class SimpleXmlParser {
         // System.out.println(p.toString(root));
         String dir = "big_doc\\thesis";
         //parse, add ids and create temporary xml
-        
-//        stamp = true;
-//        IRNode t0_stamped = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t0.xml"));
-//        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t0_stamped.xml", t0_stamped, true);
-//        p = new SimpleXmlParser(0);
+
+        stamp = true;
+        IRNode t0_stamped = p.parse(new File("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t0.xml"));
+        SimpleXmlParser.writeToFile("C:\\Users\\agaze\\Documents\\Faculdade\\UWM - Master\\Thesis\\Xml samples\\" + dir + "\\t0_stamped.xml", t0_stamped, true);
+        p = new SimpleXmlParser(0);
         long startMem = Runtime.getRuntime().totalMemory()
                 - Runtime.getRuntime().freeMemory();
         long t0 = System.currentTimeMillis();
@@ -229,18 +238,18 @@ public class SimpleXmlParser {
 
         IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
                 root, new VersionMarker(v1), new VersionMarker(v0), new VersionMarker(v2));
-        
+
         System.out.println("");
         System.out.println("");
         System.out.println("");
-        for(int i=0; i< tagListT0.size(); i++){
-            if(tagListT0.get(i).id != tagListT1.get(i).id){
+        for (int i = 0; i < tagListT0.size(); i++) {
+            if (tagListT0.get(i).id != tagListT1.get(i).id) {
                 System.out.println("Conflict:  T0-T1 ");
-                System.out.println("TagT0: "+tagListT0.get(i).tag + " ID:"+tagListT0.get(i).id);
-                System.out.println("TagT1: "+tagListT1.get(i).tag + " ID:"+tagListT1.get(i).id);
+                System.out.println("TagT0: " + tagListT0.get(i).tag + " ID:" + tagListT0.get(i).id);
+                System.out.println("TagT1: " + tagListT1.get(i).tag + " ID:" + tagListT1.get(i).id);
                 System.out.println("");
             }
-            
+
 //            if(tagListT0.get(i).id != tagListT2.get(i).id){
 //                System.out.println("Conflict:  T0-T2 ");
 //                System.out.println("Tag: "+tagListT2.get(i).tag + " ID:"+tagListT2.get(i).id);
@@ -252,7 +261,6 @@ public class SimpleXmlParser {
 //                System.out.println("Tag: "+tagListT2.get(i).tag + " ID:"+tagListT2.get(i).id);
 //                System.out.println("");
 //            }
-            
         }
         Version v3 = merge.merge();
         long t4 = System.currentTimeMillis();
@@ -271,6 +279,69 @@ public class SimpleXmlParser {
 
         System.out.println("memory: " + (endMem - startMem));
         //System.out.println(nodeTable.size());
+    }
+
+    public static void createVIDs(File baseXml, File outputFile){
+        SimpleXmlParser p = new SimpleXmlParser(0);
+        stamp = true;
+        IRNode t0_stamped;
+        
+        try {
+            t0_stamped = p.parse(baseXml);
+            SimpleXmlParser.writeToFile(outputFile, t0_stamped, true);
+        } catch (Exception ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        
+    }
+    
+    public static void mergeVIDs(File baseXml, File branch1Xml, File branch2Xml, File outputFile) {
+        stamp = false;
+        SimpleXmlParser p = new SimpleXmlParser(0);
+        IRNode root = null;
+        try {
+            root = p.parse(baseXml);
+        } catch (Exception ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        Version v0 = Version.getVersion();
+        tagNameAttr.addDefineObserver(changeRecord);
+        attrListAttr.addDefineObserver(changeRecord);
+        tree.addObserver(changeRecord);
+        PropagateUpTree.attach(changeRecord, tree);
+        Version.saveVersion(v0);
+        long t1 = System.currentTimeMillis();
+        try {
+            p.parse(root, branch1Xml);
+
+        } catch (Exception ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        Version v1 = Version.getVersion();
+        Version.saveVersion(v0);
+        isT1 = false;
+        try {
+            p.parse(root, branch2Xml);
+        } catch (Exception ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        Version v2 = Version.getVersion();
+        Version.saveVersion(v0);
+        IRTreeMerge merge = new IRTreeMerge(SimpleXmlParser.tree, SimpleXmlParser.changeRecord,
+                root, new VersionMarker(v1), new VersionMarker(v0), new VersionMarker(v2));
+        Version v3 = merge.merge();
+        long t4 = System.currentTimeMillis();
+        Version.saveVersion(v3);
+                
+        try {
+            SimpleXmlParser.writeToFile(outputFile, root, false);
+        } catch (FileNotFoundException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        } 
+        
+
     }
 
     private static String indent(int n) throws IOException {
@@ -558,7 +629,7 @@ public class SimpleXmlParser {
         if (tagName.equals(SimpleXmlParser.W_R)) {
             longid = n.getSlotValue(SimpleXmlParser.mouidAttr);
 //            int rsid = (int) (longid >> 32);
-            wrapid = (int) longid;
+            wrapid = (int) (longid >> 32);
             hex = String.format("%08X", wrapid);
             if (withID) {
                 w.write(" " + RSIDRPR + "=\"" + hex + "\"");
@@ -575,7 +646,13 @@ public class SimpleXmlParser {
             wrapid = (int) longid;
             hex = String.format("%08X", wrapid);
             w.write(" " + IDNAME + "=\"" + hex + "\"");
+        } else if (tagName.equals("w:sectPr")) {
+            longid = n.getSlotValue(SimpleXmlParser.mouidAttr);
+            int id = (int) (longid >> 32);
+            hex = String.format("%08X", id);
+            w.write(" " + IDNAME + "=\"" + hex + "\"");
         }
+
         w.write(dumpAttrs2(indent, n));
 
         int numChildren = tree.numChildren(n);
@@ -611,7 +688,8 @@ public class SimpleXmlParser {
     }
 
     public static void writeToFile(File file, IRNode n, boolean assignID) throws IOException {
-        FileWriter w = new FileWriter(file);
+//        FileWriter w = new FileWriter(file);
+        Writer w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
         w.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
         dumpContent(w, 0, n, true, assignID);
         w.close();
@@ -718,30 +796,31 @@ public class SimpleXmlParser {
         }
 
     }
-    
-    private static class Tag{
+
+    private static class Tag {
+
         String tag;
         Long id;
-        
-        public Tag(String tag, Long id){
+
+        public Tag(String tag, Long id) {
             this.tag = tag;
             this.id = id;
         }
     }
 
-    private static class TableGrid{
-            
-            public int tableID;
-            public Long insideTagID;
-            public IRNode node;
-            
-            private TableGrid(int tableID, Long insideTagID, IRNode node){
-                this.tableID = tableID;
-                this.insideTagID = insideTagID;
-                this.node = node;
-            }
+    private static class TableGrid {
+
+        public int tableID;
+        public Long insideTagID;
+        public IRNode node;
+
+        private TableGrid(int tableID, Long insideTagID, IRNode node) {
+            this.tableID = tableID;
+            this.insideTagID = insideTagID;
+            this.node = node;
         }
-    
+    }
+
     public Tuple convertStreamToString(InputStream is) throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
@@ -757,6 +836,7 @@ public class SimpleXmlParser {
     private IRNode parse(InputSource is) throws Exception {
         tablesCount = 0;
         tableColumnCount = 0;
+        wrCount = 0;
         XMLReader parser = getReader();
         NormalParsingHandler handler = new NormalParsingHandler();
         parser.setContentHandler(handler);
@@ -766,8 +846,9 @@ public class SimpleXmlParser {
 
     private IRNode parse(IRNode root, InputSource is) throws Exception {
         tablesCount = 0;
+        wrCount = 0;
         tableColumnCount = 0;
-        tblGrid_tags_copy =  (Hashtable<Long, IRNode>) tblGrid_tags.clone();
+        tblGrid_tags_copy = (Hashtable<Long, IRNode>) tblGrid_tags.clone();
         XMLReader parser = getReader();
         parser.setContentHandler(new SyncParsingHandler(root));
         parser.parse(is);
@@ -791,13 +872,10 @@ public class SimpleXmlParser {
      * @param tagName
      * @param attrs
      */
-    public void initNode2(IRNode node, String tagName, Attributes attrs, boolean newNode, boolean styleOut, boolean styleOutTable, boolean wtcChield) {
-        
-        
+    public void initNode2(IRNode node, String tagName, Attributes attrs, boolean newNode, boolean styleOut, boolean styleOutTable, boolean wtcChield, boolean WSectPrchild) {
+
         //todo
 //         make sectPr work
-                
-                
         node.setSlotValue(tagNameAttr, tagName);
         AttributeList attrList = new AttributeList(4);
 
@@ -805,29 +883,46 @@ public class SimpleXmlParser {
 
         //document and body tag
         if (tagName.equals(SimpleXmlParser.DOCUMENT_TAG) || tagName.equals(SimpleXmlParser.BODY_TAG)) {
-            
+
             wrapid++;
             longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
 
         } else if ((attrs.getValue(SimpleXmlParser.RSIDRPR) == null) && tagName.equals(SimpleXmlParser.W_R)) {
+            String fldCharType = hasFldChar(wrCount);
             
-            //creates new random generated rsidRPr for the <w:r> tags when rsidRPr is not present
-            do {
-                wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
-                longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
-            } while (nodeTable.containsKey(longid) || idsTable.containsKey(wrapid));
-
-            idsTable.put(wrapid, tagName);
+            if(fldCharType.equals("")){
+                //creates new random generated rsidRPr for the <w:r> tags when rsidRPr is not present
+                do {
+                    wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                    longid = (((long) wrapid) << 32) | (mouid & 0xffffffffL);
+                } while (nodeTable.containsKey(longid) || idsTable.containsKey(wrapid));
+                idsTable.put(wrapid, tagName);
+            }else{
+                    if(fldCharType.equals("begin")){
+                        wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                        fldCharId = wrapid;
+                        longid = (((long) wrapid) << 32) | (fldCharType.hashCode() & 0xffffffffL);
+                        while (nodeTable.containsKey(longid) && idsTable.containsKey(wrapid)) {
+                            wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                            longid = (((long) wrapid) << 32) | (fldCharType.hashCode() & 0xffffffffL);
+                        }
+                        idsTable.put(wrapid, tagName);
+                    }else{
+                        longid = (((long) fldCharId) << 32) | (fldCharType.hashCode() & 0xffffffffL);
+                    }
+            }
+            
+            
+            
             if (newNode) {
                 rsidRPr = String.format("%08X", wrapid);
             }
-            
+
         } else if (tagName.equals("w:p")) {
-            
+
             //do nothing
-            
         } else if (tagName.equals("w:tbl")) {
-            
+
             String tableIDs = getTableID(tablesCount);
             if (tableIDs.equals("")) {
                 do {
@@ -839,29 +934,39 @@ public class SimpleXmlParser {
                 longid = (((long) tagName.hashCode()) << 32) | (tableid & 0xffffffffL);
             }
             idsTable.put(tableid, tagName);
-            
+
         } else if (tagName.equals("w:tr")) {
             System.out.println();
-            
+
             // do nothing
-            
         } else if (tagName.equals("w:tc")) {
-            
+
             wtc_ID_used = false;
             if (!stamp) {
                 mouid = (int) Long.parseLong(getTableColumnID(tableColumnCount), 16);
             } else {
                 mouid = (int) Long.parseLong(getRandomHexString(8), 16);
             }
-            
+
             longid = (((long) tagName.hashCode()) << 32) | (mouid & 0xffffffffL);
-            while (nodeTable.containsKey(longid) || nodeTable.containsKey((((long) mouid << 32) | (0 & 0xffffffffL))) ) {
+            while (nodeTable.containsKey(longid) || nodeTable.containsKey((((long) mouid << 32) | (0 & 0xffffffffL)))) {
                 mouid = (int) Long.parseLong(getRandomHexString(8), 16);
                 longid = (((long) tagName.hashCode()) << 32) | (mouid & 0xffffffffL);
             }
 
+        } else if (WSectPrchild) {
+            if (tagName.equals("w:headerReference") || tagName.equals("w:footerReference")) {
+                String rID = attrs.getValue("r:id");
+                longid = (((long) sectPrid) << 32) | (rID.hashCode() & 0xffffffffL);
+            } else {
+                longid = (((long) sectPrid) << 32) | (tagName.hashCode() & 0xffffffffL);
+            }
+
+        } else if(tagName.equals("w:fldChar")){
+            String fldCharType = hasFldChar(wrCount);
+            longid = (((long) fldCharId) << 32) | ((tagName+fldCharType).hashCode() & 0xffffffffL);
         } else {
-            
+
             if (styleOut || wtcChield) {
                 longid = (((long) mouid) << 32) | (tagName.hashCode() & 0xffffffffL);
                 while (nodeTable.containsKey(longid)) {
@@ -884,14 +989,14 @@ public class SimpleXmlParser {
                 //Combining two integer to Long
                 //hi = mouid   lo= wrapid
                 // wrapid for rsidR nodes will be always zero
-                
+
                 if (wtcChield && !wtc_ID_used) {
                     //use mouid calculated when w:tc was parsed
                     wtc_ID_used = true;
                 } else {
                     mouid = (int) Long.parseLong(val, 16);
                 }
-                
+
                 wrapid = 0;
                 longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
                 while (nodeTable.containsKey(longid) || idsTable.containsKey(mouid)) {
@@ -901,38 +1006,66 @@ public class SimpleXmlParser {
                 idsTable.put(mouid, tagName);
 
             } else if (tagName.equals(SimpleXmlParser.W_R) && name.equals(SimpleXmlParser.RSIDRPR)) {
-
-                wrapid = (int) Long.parseLong(val, 16);
-                longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
-//                -6891720328633701136
-                /*if rsidRPr is alredy present, generate a new one*/
-                while (nodeTable.containsKey(longid) || idsTable.containsKey(wrapid)) {
-                    wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
-                    longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+                System.out.println("w:r -- "+val);
+                
+                String fldCharType = hasFldChar(wrCount);
+                if(fldCharType.equals("")){
+                    wrapid = (int) Long.parseLong(val, 16);
+                    longid = (((long) wrapid) << 32) | (mouid & 0xffffffffL);
+    //                -6891720328633701136
+                    /*if rsidRPr is alredy present, generate a new one*/
+                    while (nodeTable.containsKey(longid) || idsTable.containsKey(wrapid)) {
+                        wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                        longid = (((long) mouid) << 32) | (wrapid & 0xffffffffL);
+                    }
+                    //7548144
+                    idsTable.put(wrapid, tagName);
+                }else{
+                    if(fldCharType.equals("begin")){
+                        wrapid = (int) Long.parseLong(val, 16);
+                        fldCharId = wrapid;
+                        longid = (((long) wrapid) << 32) | (fldCharType.hashCode() & 0xffffffffL);
+                        while (nodeTable.containsKey(longid) && idsTable.containsKey(wrapid)) {
+                            wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                            longid = (((long) wrapid) << 32) | (fldCharType.hashCode() & 0xffffffffL);
+                        }
+                        idsTable.put(wrapid, tagName);
+                    }else{
+                        longid = (((long) fldCharId) << 32) | (fldCharType.hashCode() & 0xffffffffL);
+                    }
                 }
-                //7548144
-                idsTable.put(wrapid, tagName);
+                    
                 if (newNode) {
                     rsidRPr = String.format("%08X", wrapid);
                 }
 //                
             } else if (tagName.equals("w:tr") && name.equals("w:rsidR")) {
-
-                wrapid = (int) Long.parseLong(val, 16);
-                longid = (((long) tableid) << 32) | (wrapid & 0xffffffffL);
-                while (nodeTable.containsKey(longid)) {
-                    wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                
+                    wrapid = (int) Long.parseLong(val, 16);
                     longid = (((long) tableid) << 32) | (wrapid & 0xffffffffL);
+                while (nodeTable.containsKey(longid)) {
+                        wrapid = (int) Long.parseLong(getRandomHexString(8), 16);
+                        longid = (((long) tableid) << 32) | (wrapid & 0xffffffffL);
+                    }
+                    idsTable.put(wrapid, tagName);
+                
+            } else if (tagName.equals("w:sectPr") && name.equals("w:rsidR")) {
+
+//                sectPrid = (int) Long.parseLong(val, 16);
+                sectPrid = mouid;
+                longid = (((long) sectPrid) << 32) | (tagName.hashCode() & 0xffffffffL);
+                while (nodeTable.containsKey(longid)) {
+                    sectPrid = (int) Long.parseLong(getRandomHexString(8), 16);
+                    longid = (((long) sectPrid) << 32) | (tagName.hashCode() & 0xffffffffL);
                 }
-                idsTable.put(wrapid,tagName);
+                idsTable.put(sectPrid, tagName);
             } else {
                 attrList.addAttribute(new Attribute(name, val));
             }
         }
-        
-        System.out.println(tagName+" "+longid);
-        
-        
+
+        System.out.println(tagName + " " + longid);
+
         if (longid != -1) {
             if (newNode) {
                 node.setSlotValue(mouidAttr, longid);
@@ -945,10 +1078,9 @@ public class SimpleXmlParser {
         node.setSlotValue(attrListAttr, attrList);
 
 //        if(!newNode){
-            tree.initNode(node);
+        tree.initNode(node);
 //        }
 
-        
     }
 
     private String getRandomHexString(int numchars) {
@@ -957,15 +1089,57 @@ public class SimpleXmlParser {
         return String.format("%08X", rand);
     }
 
+    private String hasFldChar(int wrCount) {
+        String wr ="<w:r>";
+        int trStartIndex = XMLstring.indexOf(wr);
+        
+        if (trStartIndex == -1) {
+            wr = "w:r ";
+            trStartIndex = XMLstring.indexOf(wr);
+            if (trStartIndex == -1) {
+                return "";
+            }
+        }
+        
+        while (--wrCount > 0 && trStartIndex != -1) {
+            trStartIndex = XMLstring.indexOf(wr, trStartIndex + 1);
+        }
+        if (trStartIndex == -1) {
+            return "";
+        }
+        int trEndIndex = XMLstring.indexOf("</w:r>", trStartIndex + 1);
+
+        String tr = XMLstring.substring(trStartIndex, trEndIndex + 1);
+
+        //<w:tblCaption w:val="ID:1"/>
+        int fldCharIndex = tr.indexOf("w:fldCharType");
+        if (fldCharIndex == -1) {
+            return "";
+
+        }
+        String fldChar = tr.substring(fldCharIndex - 1, tr.indexOf("/>", fldCharIndex + 1) + 2);
+
+        if (fldChar.contains("begin")) {
+            return "begin";
+        } else if(fldChar.contains("separate")) {
+            return "separate";
+        } else if(fldChar.contains("end")){
+            return "end";
+        }else{
+            return "";
+        }
+
+    }
+    
     private String getTableID(int tableCount) {
         int tableStartIndex = XMLstring.indexOf("<w:tbl>");
-        if(tableStartIndex == -1){
+        if (tableStartIndex == -1) {
             return "";
         }
         while (--tableCount > 0 && tableStartIndex != -1) {
             tableStartIndex = XMLstring.indexOf("<w:tbl>", tableStartIndex + 1);
         }
-        if(tableStartIndex == -1){
+        if (tableStartIndex == -1) {
             return "";
         }
         int tableEndIndex = XMLstring.indexOf("</w:tbl>", tableStartIndex + 1);
@@ -987,33 +1161,33 @@ public class SimpleXmlParser {
         }
 
     }
-    
-    private List<String> getTableColumnListID(int tcCount){
-        
+
+    private List<String> getTableColumnListID(int tcCount) {
+
         ArrayList<String> list = new ArrayList<String>();
         int startIndex = XMLstring.indexOf("<w:tc>");
         int tableEndIndex;
         int index;
-        
+
         while (--tcCount > 0 && startIndex != -1) {
             startIndex = XMLstring.indexOf("<w:tc>", startIndex + 1);
         }
-        
-        if(startIndex != -1){
+
+        if (startIndex != -1) {
             tableEndIndex = XMLstring.indexOf("</w:tc>", startIndex + 1);
             String tc = XMLstring.substring(startIndex, tableEndIndex + 7);
-            
+
             index = tc.indexOf("w:rsidR=");
             while (index != -1) {
                 list.add(tc.substring(index + 9, index + 17));
-            
+
                 index = tc.indexOf("w:rsidR=", index + 17);
             }
         }
-        
+
         return list;
     }
-    
+
     private String getTableColumnID(int tcCount) {
 
         int startIndex = XMLstring.indexOf("<w:tc>");
@@ -1054,9 +1228,9 @@ public class SimpleXmlParser {
 //    tree.initNode(node);
 //  }
 
-    private IRNode createElementNode(String tagName, Attributes attrs, boolean newNode, boolean styleOut, boolean styleOutTable, boolean wtcChield) {
+    private IRNode createElementNode(String tagName, Attributes attrs, boolean newNode, boolean styleOut, boolean styleOutTable, boolean wtcChield, boolean WSectPrchild) {
         IRNode node = new PlainIRNode();
-        initNode2(node, tagName, attrs, newNode, styleOut, styleOutTable, wtcChield);
+        initNode2(node, tagName, attrs, newNode, styleOut, styleOutTable, wtcChield, WSectPrchild);
         return node;
     }
 
@@ -1101,13 +1275,15 @@ public class SimpleXmlParser {
             boolean WTBchild = false;
             boolean WtbGridchild = false;
             boolean WTCchild = false;
-            
+            boolean WSectPrchild = false;
+
 //            if(qualifiedName.equals("w:tr")){
 //                System.out.println("");
 //            }
-            
-            if(qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd")) return;
-            
+            if (qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd") || qualifiedName.equals("w:proofErr")) {
+                return;
+            }
+
             //Inform how many tables and table column have been seen in the XML
             if (qualifiedName.equals("w:tbl")) {
                 tablesCount++;
@@ -1115,21 +1291,38 @@ public class SimpleXmlParser {
             if (qualifiedName.equals("w:tc")) {
                 tableColumnCount++;
             }
-            
+            if(qualifiedName.equals("w:r")){
+                wrCount++;
+            }
+
             //
             //Identify Who is/are the parent(s) of current tag
             //
             if (!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals(SimpleXmlParser.W_R)) {
-                
-                if(qualifiedName.equals("w:p")) WPchild=true;
-                
-                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) WpPRchild = true; 
-                
-                if (qualifiedName.equals("w:tbl")) WTBchild = true;
-                
-                if (qualifiedName.equals("w:tblPr")) WtbPRchild = true;
-                
-                if(qualifiedName.equals("w:tblGrid")) WtbGridchild=true;
+
+                if (qualifiedName.equals("w:p")) {
+                    WPchild = true;
+                }
+
+                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) {
+                    WpPRchild = true;
+                }
+
+                if (qualifiedName.equals("w:tbl")) {
+                    WTBchild = true;
+                }
+
+                if (qualifiedName.equals("w:tblPr")) {
+                    WtbPRchild = true;
+                }
+
+                if (qualifiedName.equals("w:tblGrid")) {
+                    WtbGridchild = true;
+                }
+
+                if (qualifiedName.equals("w:sectPr")) {
+                    WSectPrchild = true;
+                }
 
                 Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
                 while (!temp.isEmpty()) {
@@ -1152,32 +1345,37 @@ public class SimpleXmlParser {
                     } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:tc")) {
                         WTCchild = true;
                         break;
+                    } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:sectPr")) {
+                        WSectPrchild = true;
+                        break;
                     }
                     temp.pop();
                 }
-                
 
-                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild) {
+                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild && !WSectPrchild) {
                     return;
                 }
             }
-            
+
             boolean styleOut = (WPchild && WpPRchild && !WRchild);
             boolean styleOutTable = WtbPRchild || WtbGridchild;
 
-            IRNode node = createElementNode(qualifiedName, attrs, newNode, styleOut, styleOutTable, WTCchild);
-            
+            IRNode node = createElementNode(qualifiedName, attrs, newNode, styleOut, styleOutTable, WTCchild, WSectPrchild);
+
             nodeTable.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
-            
+
             //Tags inside tblGrid can repeat themself. To keep track, tblGrid has it own Hashtable
-            if(WtbGridchild && !qualifiedName.equals("w:tblGrid")){
+            if (WtbGridchild && !qualifiedName.equals("w:tblGrid")) {
                 tblGrid_tags.put(node.getSlotValue(SimpleXmlParser.mouidAttr), node);
-                
+
                 tableGridList.add(new TableGrid(tableid, node.getSlotValue(SimpleXmlParser.mouidAttr), node));
             }
-            
-            
-            System.out.println(qualifiedName+" - "+node.getSlotValue(SimpleXmlParser.mouidAttr)+" => "+node.toString());
+
+            if ((node.getSlotValue(SimpleXmlParser.mouidAttr) + "").equals("37741655420569534")) {
+                System.out.println();
+            }
+
+            System.out.println(qualifiedName + " - " + node.getSlotValue(SimpleXmlParser.mouidAttr) + " => " + node.toString() +"--"+node.identity().toString());
             
             //handling namespaces
             if (!prefixList.isEmpty()) {
@@ -1203,7 +1401,6 @@ public class SimpleXmlParser {
             stack.push(node);
 
             /*8888888888888888888888888888*/
-            
             tagListT0.add(new Tag(qualifiedName, node.getSlotValue(SimpleXmlParser.mouidAttr)));
         }
 
@@ -1228,23 +1425,40 @@ public class SimpleXmlParser {
             boolean WTBchild = false;
             boolean WtbGridchild = false;
             boolean WTCchild = false;
-            
-            if(qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd")) return;
+            boolean WSectPrchild = false;
+
+            if (qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd") || qualifiedName.equals("w:proofErr")) {
+                return;
+            }
 
             //
             //Identify Who is/are the parent(s) of current tag
             //
             if (!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals(SimpleXmlParser.W_R)) {
-                
-                if(qualifiedName.equals("w:p")) WPchild=true;
-                
-                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) WpPRchild = true; 
-                
-                if (qualifiedName.equals("w:tbl")) WTBchild = true;
-                
-                if (qualifiedName.equals("w:tblPr")) WtbPRchild = true;
-                
-                if(qualifiedName.equals("w:tblGrid")) WtbGridchild=true;
+
+                if (qualifiedName.equals("w:p")) {
+                    WPchild = true;
+                }
+
+                if (qualifiedName.equals(SimpleXmlParser.W_pPR)) {
+                    WpPRchild = true;
+                }
+
+                if (qualifiedName.equals("w:tbl")) {
+                    WTBchild = true;
+                }
+
+                if (qualifiedName.equals("w:tblPr")) {
+                    WtbPRchild = true;
+                }
+
+                if (qualifiedName.equals("w:tblGrid")) {
+                    WtbGridchild = true;
+                }
+
+                if (qualifiedName.equals("w:secPr")) {
+                    WSectPrchild = true;
+                }
 
                 Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
                 while (!temp.isEmpty()) {
@@ -1267,12 +1481,18 @@ public class SimpleXmlParser {
                     } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:tc")) {
                         WTCchild = true;
                         break;
+                    } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:secPr")) {
+                        WSectPrchild = true;
+                        break;
                     }
                     temp.pop();
                 }
-                
 
-                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild) {
+                if (WSectPrchild) {
+                    return;
+                }
+
+                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild && WSectPrchild) {
                     return;
                 }
             }
@@ -1340,14 +1560,13 @@ public class SimpleXmlParser {
         @Override
         public void startElement(String nameSpaceURI, String simpleName,
                 String qualifiedName, Attributes attrs) throws SAXException {
-            if(qualifiedName.equals("w:tr")){
+            if (qualifiedName.equals("w:tr")) {
                 System.out.println("");
             }
 //            System.out.println(qualifiedName);
             IRNode node = null;
             List<IRNode> oldChildren = null;
             boolean newNode = false;
-
 
             boolean WRchild = false;
             boolean WPchild = false;
@@ -1356,10 +1575,12 @@ public class SimpleXmlParser {
             boolean WTBchild = false;
             boolean WtbGridchild = false;
             boolean WTCchild = false;
-            
-            
-            if(qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd")) return;
-            
+            boolean WSectPrchild = false;
+
+            if (qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd") || qualifiedName.equals("w:proofErr")) {
+                return;
+            }
+
             //Inform how many tables and table column have been seen in the XML
             if (qualifiedName.equals("w:tbl")) {
                 tablesCount++;
@@ -1367,11 +1588,16 @@ public class SimpleXmlParser {
             if (qualifiedName.equals("w:tc")) {
                 tableColumnCount++;
             }
+            if(qualifiedName.equals("w:r")){
+                wrCount++;
+            }
 
             if (!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals(SimpleXmlParser.W_R)) {
-                
-                if(qualifiedName.equals("w:p")) WPchild=true;
-                
+
+                if (qualifiedName.equals("w:p")) {
+                    WPchild = true;
+                }
+
                 if (qualifiedName.equals(SimpleXmlParser.W_pPR)) {
                     WpPRchild = true;
                 }
@@ -1381,8 +1607,14 @@ public class SimpleXmlParser {
                 if (qualifiedName.equals("w:tblPr")) {
                     WtbPRchild = true;
                 }
-                
-                if(qualifiedName.equals("w:tblGrid")) WtbGridchild=true;
+
+                if (qualifiedName.equals("w:tblGrid")) {
+                    WtbGridchild = true;
+                }
+
+                if (qualifiedName.equals("w:sectPr")) {
+                    WSectPrchild = true;
+                }
 
                 Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
                 while (!temp.isEmpty()) {
@@ -1405,94 +1637,126 @@ public class SimpleXmlParser {
                     } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:tc")) {
                         WTCchild = true;
                         break;
+                    } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:sectPr")) {
+                        WSectPrchild = true;
+                        break;
                     }
                     temp.pop();
                 }
-                
+
                 //If is not any of the valid tag, return
-                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild) {
+                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild && !WSectPrchild) {
                     return;
                 }
             }
-            
-            boolean styleOut = (WPchild && WpPRchild && !WRchild);
-            boolean styleOutTable = WtbPRchild || WtbGridchild ;
 
-            int int_rsidR, int_rsidRPr, int_tableID;
+            boolean styleOut = (WPchild && WpPRchild && !WRchild);
+            boolean styleOutTable = WtbPRchild || WtbGridchild;
+
+            int int_rsidR, int_rsidRPr, int_tableID, int_sectPr;
             long longid = -1;
-            
-            if(qualifiedName.equals("w:tr")){
+
+            if (qualifiedName.equals("w:tr")) {
                 System.out.print("");
             }
-            
-            
+
             if (qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG)) {
                 node = nodeTable.get((long) 1);
             } else if (qualifiedName.equals(SimpleXmlParser.BODY_TAG)) {
                 node = nodeTable.get((long) 2);
             } else if (qualifiedName.equals("w:p") && attrs.getValue(IDNAME) != null) {
-                
+
                 rsidR = attrs.getValue(IDNAME);
                 int_rsidR = (int) Long.parseLong(rsidR, 16);
                 longid = (((long) int_rsidR) << 32) | (0 & 0xFFFFFFFFL);
+
+            } else if(qualifiedName.equals("w:fldChar")){
+//                int_rsidRPr = (int) Long.parseLong(rsidRPr, 16);
                 
-            } else if (qualifiedName.equals("w:r") ) {
+                String fldCharType = hasFldChar(wrCount);
                 
-                if(attrs.getValue(RSIDRPR) != null){
+                longid = (((long) int_fldCharID) << 32) | ((qualifiedName+fldCharType).hashCode() & 0xFFFFFFFFL);
+            }else if (qualifiedName.equals("w:r")) {
+
+                if (attrs.getValue(RSIDRPR) != null) {
+                    String fldCharType = hasFldChar(wrCount);
+                    
                     rsidRPr = attrs.getValue(RSIDRPR);
                     int_rsidR = (int) Long.parseLong(rsidR, 16);
                     int_rsidRPr = (int) Long.parseLong(rsidRPr, 16);
-                    longid = (((long) int_rsidR) << 32) | (int_rsidRPr & 0xFFFFFFFFL);
+                        
+                    if(fldCharType.equals("")){
+                        longid = (((long) int_rsidRPr) << 32) | (int_rsidR & 0xFFFFFFFFL);
+                    }else{
+                        int_fldCharID = int_rsidRPr;
+                        longid = (((long) int_rsidRPr) << 32) | (fldCharType.hashCode() & 0xFFFFFFFFL);
+                    }
+                    
+                    
+                    
                 }
-                
+
             } else if (qualifiedName.equals("w:tbl")) {
                 tableID = getTableID(tablesCount);
                 if (!tableID.equals("")) {
                     int_tableID = (int) Long.parseLong(tableID, 16);
                     longid = (((long) qualifiedName.hashCode()) << 32) | (int_tableID & 0xFFFFFFFFL);
                 }
-            }else if(qualifiedName.equals("w:tr")){
+            } else if (qualifiedName.equals("w:tr")) {
                 if (!tableID.equals("")) {
                     int_tableID = (int) Long.parseLong(tableID, 16);
                     rsidR = attrs.getValue(IDNAME);
                     int_rsidR = (int) Long.parseLong(rsidR, 16);
                     longid = (((long) int_tableID) << 32) | (int_rsidR & 0xFFFFFFFFL);
-                    if(nodeTable.get(longid) != null){
-                        
-                    }else if(idTRTable.containsKey(int_rsidR)){
+                    if (nodeTable.get(longid) != null) {
+
+                    } else if (idTRTable.containsKey(int_rsidR)) {
                         longid = -1;
-                    }else{
-                        idTRTable.put(int_rsidR,qualifiedName);
+                    } else {
+                        idTRTable.put(int_rsidR, qualifiedName);
                     }
                 }
-                
-            }else if (qualifiedName.equals("w:tc")) {
-                
+
+            } else if (qualifiedName.equals("w:tc")) {
+
                 List<String> list = getTableColumnListID(tableColumnCount);
-                
-                for(String s : list){
-                    
+
+                for (String s : list) {
+
                     int_rsidR = (int) Long.parseLong(s, 16);
                     longid = (((long) qualifiedName.hashCode()) << 32) | (int_rsidR & 0xFFFFFFFFL);
-                    
-                    if(!(nodeTable.containsKey(longid) && nodeTable.containsKey((long) int_rsidR << 32 | 0 & 0xFFFFFFFFL))){
-                        longid=-1;
-                    }else{
-                        rsidR=s;
+
+                    if (!(nodeTable.containsKey(longid) && nodeTable.containsKey((long) int_rsidR << 32 | 0 & 0xFFFFFFFFL))) {
+                        longid = -1;
+                    } else {
+                        rsidR = s;
                         break;
                     }
                 }
 
-            } 
-            else {
+            } else if (qualifiedName.equals("w:sectPr")) {
+                sectPr = attrs.getValue(IDNAME);
+                int_sectPr = (int) Long.parseLong(sectPr, 16);
+                longid = (((long) int_sectPr) << 32) | (qualifiedName.hashCode() & 0xFFFFFFFFL);
+
+            } else if (WSectPrchild) {
+                int_sectPr = (int) Long.parseLong(sectPr, 16);
+                if (qualifiedName.equals("w:headerReference") || qualifiedName.equals("w:footerReference")) {
+                    String rID = attrs.getValue("r:id");
+
+                    longid = (((long) int_sectPr) << 32) | (rID.hashCode() & 0xffffffffL);
+                } else {
+                    longid = (((long) int_sectPr) << 32) | (qualifiedName.hashCode() & 0xffffffffL);
+                }
+            } else {
                 if (styleOut || WTCchild) {
-                    
-                    if(!rsidR.equals("")){
+
+                    if (!rsidR.equals("")) {
                         int_rsidR = (int) Long.parseLong(rsidR, 16);
                         longid = (((long) int_rsidR) << 32) | (qualifiedName.hashCode() & 0xFFFFFFFFL);
                     }
                 } else if (styleOutTable) {
-                    if(!tableID.equals("")){
+                    if (!tableID.equals("")) {
                         int_tableID = (int) Long.parseLong(tableID, 16);
                         longid = (((long) int_tableID) << 32) | (qualifiedName.hashCode() & 0xFFFFFFFFL);
                     }
@@ -1509,16 +1773,16 @@ public class SimpleXmlParser {
 
             if (styleOut || styleOutTable) {
                 //Style child of paragraph
-                
+
                 //compare nodes
-                IRNode node2 = createElementNode(qualifiedName, attrs, true, styleOut, styleOutTable, WTCchild);
-                
-                if(WtbGridchild && !qualifiedName.equals("w:tblGrid")){
+                IRNode node2 = createElementNode(qualifiedName, attrs, true, styleOut, styleOutTable, WTCchild, false);
+
+                if (WtbGridchild && !qualifiedName.equals("w:tblGrid")) {
                     Enumeration<IRNode> nodeList = tblGrid_tags_copy.elements();
                     IRNode n;
                     Long aa = node2.getSlotValue(SimpleXmlParser.mouidAttr);
                     Long bb;
-                    while(nodeList.hasMoreElements()){
+                    while (nodeList.hasMoreElements()) {
                         n = nodeList.nextElement();
                         bb = n.getSlotValue(SimpleXmlParser.mouidAttr);
                         if (n != null && compareNodes(n, node2)) {
@@ -1527,7 +1791,7 @@ public class SimpleXmlParser {
                             break;
                         }
                     }
-                    if(nodeList.hasMoreElements() && node == null){
+                    if (nodeList.hasMoreElements() && node == null) {
                         node = node2;
                         newNode = true;
                     }
@@ -1541,7 +1805,7 @@ public class SimpleXmlParser {
 
             if (node == null) {
                 newNode = true;
-                node = createElementNode(qualifiedName, attrs, newNode, false, false, WTCchild);
+                node = createElementNode(qualifiedName, attrs, newNode, false, false, WTCchild, false);
 
                 //          throw new SAXException("Can't find node");
             } else if (!newNode) {
@@ -1557,7 +1821,7 @@ public class SimpleXmlParser {
                 for (int i = 0; i < numChildren; i++) {
                     oldChildren.add(tree.getChild(node, i));
                 }
-                
+
             }
 //            int numChildren = tree.numChildren(node);
 //            oldChildren = new Vector<IRNode>(numChildren);
@@ -1565,29 +1829,29 @@ public class SimpleXmlParser {
 //                oldChildren.add(tree.getChild(node, i));
 //            
 //            }   
-            
+
             oldChildrenStack.push(oldChildren);
             if (!newChildrenStack.isEmpty()) {
                 newChildrenStack.peek().add(node);
             }
             newChildrenStack.push(new Vector<IRNode>());
             stack.push(node);
-            
-            System.out.println(qualifiedName+" - "+node.getSlotValue(SimpleXmlParser.mouidAttr)+" => "+node.toString());
-            
-            if(isT1){
-                tagListT1.add(new Tag(qualifiedName,node.getSlotValue(SimpleXmlParser.mouidAttr) ));
-            }else{
-                tagListT2.add(new Tag(qualifiedName,node.getSlotValue(SimpleXmlParser.mouidAttr) ));
+
+            System.out.println(qualifiedName + " - " + node.getSlotValue(SimpleXmlParser.mouidAttr) + " => " + node.toString());
+
+            if (isT1) {
+                tagListT1.add(new Tag(qualifiedName, node.getSlotValue(SimpleXmlParser.mouidAttr)));
+            } else {
+                tagListT2.add(new Tag(qualifiedName, node.getSlotValue(SimpleXmlParser.mouidAttr)));
             }
         }
 
         @Override
         public void endElement(String namespaceURI, String simpleName,
                 String qualifiedName) throws SAXException {
-            
+
             System.out.println(qualifiedName + " - out");
-            if(qualifiedName.equals("w:t")){
+            if (qualifiedName.equals("w:t")) {
                 System.out.println("");
             }
             boolean WRchild = false;
@@ -1597,9 +1861,12 @@ public class SimpleXmlParser {
             boolean WTBchild = false;
             boolean WtbGridchild = false;
             boolean WTCchild = false;
-            
-            if(qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd")) return;
-            
+            boolean WSectPrchild = false;
+
+            if (qualifiedName.equals("w:bookmarkStart") || qualifiedName.equals("w:bookmarkEnd") || qualifiedName.equals("w:proofErr")) {
+                return;
+            }
+
             if (!qualifiedName.equals(SimpleXmlParser.DOCUMENT_TAG) && !qualifiedName.equals(SimpleXmlParser.BODY_TAG) && !qualifiedName.equals(SimpleXmlParser.W_R)) {
 
                 if (qualifiedName.equals(SimpleXmlParser.W_pPR)) {
@@ -1611,9 +1878,17 @@ public class SimpleXmlParser {
                 if (qualifiedName.equals("w:tblPr")) {
                     WtbPRchild = true;
                 }
-                if(qualifiedName.equals("w:p")) WPchild=true;
-                
-                if(qualifiedName.equals("w:tblGrid")) WtbGridchild=true;
+                if (qualifiedName.equals("w:p")) {
+                    WPchild = true;
+                }
+
+                if (qualifiedName.equals("w:tblGrid")) {
+                    WtbGridchild = true;
+                }
+
+                if (qualifiedName.equals("w:sectPr")) {
+                    WSectPrchild = true;
+                }
 
                 Stack<IRNode> temp = (Stack<IRNode>) stack.clone();
                 while (!temp.isEmpty()) {
@@ -1636,11 +1911,14 @@ public class SimpleXmlParser {
                     } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:tc")) {
                         WTCchild = true;
                         break;
+                    } else if (temp.peek().getSlotValue(tagNameAttr).equals("w:sectPr")) {
+                        WSectPrchild = true;
+                        break;
                     }
                     temp.pop();
                 }
 
-                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild) {
+                if (!WRchild && !WPchild && !WpPRchild && !WtbPRchild && !WTBchild && !WtbGridchild && !WTCchild && !WSectPrchild) {
                     return;
                 }
             }
@@ -1754,9 +2032,6 @@ public class SimpleXmlParser {
             //propagateChange(n);
         }
 
-        
-        
-        
 //
 // private void updateAttrs(IRNode n, Attributes attrs){
 //      IRSequence<Property> seq = n.getSlotValue(SimpleXmlParser.attrsSeqAttr);
